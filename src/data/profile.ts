@@ -306,3 +306,32 @@ export const codeFragments = [
   "torch.no_grad()",
   "0.9412 accuracy",
 ] as const;
+
+/* ------------------------------------------------------------------ */
+/* Big statement — the word tunnel                                     */
+/* ------------------------------------------------------------------ */
+
+/** Each line rushes past the camera in turn. Keep them short and declarative. */
+export const statement = {
+  eyebrow: "WHAT I ACTUALLY DO",
+  lines: ["I TURN", "IDEAS INTO", "RUNNING", "SYSTEMS."],
+  /** The word that gets the accent colour. */
+  accent: "RUNNING",
+  footer: "Not slide decks. Not mock-ups. Things that run.",
+} as const;
+
+/** Giant looping band. Reads as a machine ticking over. */
+export const marqueeItems = [
+  "PYTHON",
+  "FASTAPI",
+  "NEXT.JS",
+  "REACT",
+  "JAVA",
+  "SPRING BOOT",
+  "MONGODB",
+  "POSTGRES",
+  "LANGGRAPH",
+  "FLUTTER",
+  "TYPESCRIPT",
+  "MACHINE LEARNING",
+] as const;

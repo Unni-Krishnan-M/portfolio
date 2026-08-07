@@ -58,8 +58,8 @@ src/
 │   │                         SplitReveal, MagneticButton, SectionHeader
 │   ├── icons/                brand marks + the technology registry
 │   ├── three/                the hero WebGL scene (code-split, desktop only)
-│   └── sections/             Hero, About, Toolkit, Projects, Experience,
-│                             Achievements, Contact, Footer
+│   └── sections/             Hero, About, Statement, Toolkit, Projects,
+│                             Experience, Achievements, Contact, Footer
 └── public/img/               portrait asset
 ```
 
@@ -67,8 +67,10 @@ src/
 
 Almost everything is data-driven. To change a fact, edit `src/data/profile.ts`; to change the work shown, edit `src/data/projects.ts`. No component holds hardcoded copy about Unni.
 
-**Replace the portrait:** the current file is Unni's own photograph, background-removed and
-alpha-feathered to composite onto the light page. To swap it, drop a new cut-out at
+**Replace the portrait:** the current file is Unni's own photograph with the background
+removed locally — a per-material colour model (face, hair, neck, shirt) scored against a
+background model sampled from the frame edges, combined with a focus/bokeh score, then
+soft-matted through a trimap so hair keeps its strands. To swap it, drop a new cut-out at
 `public/img/unni-portrait.webp` (transparent background, figure fading toward the bottom) and
 update the `width`/`height` and the `aspect-[920/1021]` box in
 `src/components/sections/about/NeuralPortrait.tsx` if the dimensions differ.
@@ -101,7 +103,18 @@ Typography is Plus Jakarta Sans for everything and JetBrains Mono for technical 
 
 - **Preloader** — a boot sequence counting 0→100, then a clip-path wipe. Dispatches `bm:loaded`, which the hero waits on before starting its entrance timeline.
 - **Lenis + GSAP** — Lenis is stepped by `gsap.ticker` and calls `ScrollTrigger.update()`, so smooth scroll and scroll-triggered animation share one frame. `lagSmoothing(0)` keeps them locked together.
-- **Going inside** — the signature transition. `Gateway` is a pinned scene between the hero and About: a rounded blue-rimmed window rushes past the camera while tunnel rings and radial streaks accelerate outward, so you fly *through* into the next scene. Every other section is wrapped in `PortalSection`, which opens it from a side-inset rounded window while its contents scale up from behind. Projects is deliberately unwrapped — `clip-path` creates a containing block and would break its fixed-position pin.
+- **Going inside** — three different depth devices, deliberately not repeated:
+  `Gateway variant="portal"` (hero → About) rushes a rounded blue-rimmed window
+  past the camera while tunnel rings and radial streaks accelerate outward;
+  `Statement` is a word tunnel where each oversized line comes out of the
+  distance, fills the screen and passes the camera; `Gateway variant="grid"`
+  (→ Projects) flies down a perspective corridor. Ordinary sections use
+  `PortalSection`, which opens them from a side-inset rounded window while the
+  contents scale up from behind. Projects is deliberately unwrapped —
+  `clip-path` creates a containing block and would break its fixed-position pin.
+- **Marquee** — giant looping technology band. Runs continuously and takes scroll
+  velocity into its `timeScale`, so it lurches when you scroll hard. Two identical
+  rows wrapping at `-50%` make the loop seamless with no measurement.
 - **Projects** — vertical scroll drives horizontal movement through a pinned track. Per-card animations use ScrollTrigger's `containerAnimation` so they trigger off horizontal position.
 - **Warp overlay** — reads Lenis velocity once per frame and writes a single `--warp` custom property; radial streaks and an edge vignette scale off it, so fast scrolling feels like travel. One style write per frame regardless of streak count.
 - **Reduced motion** — every section renders its complete final state when `prefers-reduced-motion: reduce` is set. The preloader resolves immediately, Lenis never initialises, the WebGL scene is replaced by a CSS composition, and no scrubbed timeline runs.

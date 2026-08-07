@@ -19,9 +19,12 @@ import { seeded } from "@/lib/utils";
 export default function Gateway({
   label = "ABOUT",
   index = "02",
+  variant = "portal",
 }: {
   label?: string;
   index?: string;
+  /** "portal" is the rounded window; "grid" is a perspective corridor. */
+  variant?: "portal" | "grid";
 }) {
   const root = useRef<HTMLDivElement>(null);
 
@@ -82,19 +85,53 @@ export default function Gateway({
         )
         .to("[data-gw-label]", { opacity: 0, scale: 1.6, ease: "power2.in", duration: 0.3 }, 0.66);
 
+      // The corridor variant flies down a perspective grid instead.
+      if (variant === "grid") {
+        tl.fromTo(
+          "[data-gw-corridor]",
+          { backgroundPositionY: "0px", opacity: 0.4 },
+          { backgroundPositionY: "1400px", opacity: 0.95, ease: "none", duration: 1 },
+          0,
+        );
+      }
+
       return () => {
         tl.scrollTrigger?.kill();
         tl.kill();
       };
     },
-    { scope: root },
+    { scope: root, dependencies: [variant] },
   );
 
   return (
     <div ref={root} aria-hidden className="relative h-[135vh]">
       <div className="sticky top-0 flex h-[100svh] items-center justify-center overflow-hidden">
+        {/* perspective corridor — floor and ceiling rushing past */}
+        {variant === "grid" ? (
+          <>
+            {(["bottom", "top"] as const).map((edge) => (
+              <div
+                key={edge}
+                data-gw-corridor
+                className="pointer-events-none absolute inset-x-0 h-[58%]"
+                style={{
+                  [edge]: 0,
+                  backgroundImage:
+                    "linear-gradient(to right, rgba(18,97,255,0.55) 1px, transparent 1px), linear-gradient(to bottom, rgba(18,97,255,0.55) 1px, transparent 1px)",
+                  backgroundSize: "84px 84px",
+                  transform: `perspective(500px) rotateX(${edge === "bottom" ? 68 : -68}deg)`,
+                  transformOrigin: `${edge} center`,
+                  maskImage: `linear-gradient(to ${edge === "bottom" ? "top" : "bottom"}, black, transparent 80%)`,
+                  WebkitMaskImage: `linear-gradient(to ${edge === "bottom" ? "top" : "bottom"}, black, transparent 80%)`,
+                  opacity: 0.4,
+                }}
+              />
+            ))}
+          </>
+        ) : null}
+
         {/* tunnel rings */}
-        {Array.from({ length: 7 }).map((_, i) => (
+        {(variant === "portal" ? Array.from({ length: 7 }) : []).map((_, i) => (
           <span
             key={i}
             data-gw-ring
