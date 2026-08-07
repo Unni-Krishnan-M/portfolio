@@ -1,26 +1,302 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------
+   BLUE//MOTION — design tokens
+   Light futuristic editorial. Blue is the only accent.
+------------------------------------------------------------------ */
+@theme {
+  --color-bg: #f7faff;
+  --color-bg-2: #ffffff;
+  --color-blue: #1261ff;
+  --color-blue-600: #0b4ddb;
+  --color-deep: #071a3d;
+  --color-electric: #00c2ff;
+  --color-soft: #eaf2ff;
+  --color-ink: #07111f;
+  --color-muted: #64748b;
+  --color-line: #dce7f5;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-jb), ui-monospace, monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+
+  --shadow-soft: 0 1px 2px rgb(7 26 61 / 0.04), 0 8px 24px -8px rgb(7 26 61 / 0.08);
+  --shadow-lift: 0 2px 4px rgb(7 26 61 / 0.04), 0 24px 56px -16px rgb(18 97 255 / 0.18);
+  --shadow-glow: 0 0 0 1px rgb(18 97 255 / 0.12), 0 12px 40px -8px rgb(18 97 255 / 0.28);
+}
+
+/* ------------------------------------------------------------------
+   Base
+------------------------------------------------------------------ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --rail-w: 5.5rem;
+  color-scheme: light;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  border-color: var(--color-line);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: auto;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: clip;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-blue) 22%, transparent);
+  color: var(--color-deep);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+/* Hide native cursor only where the custom one is active */
+body[data-cursor="on"],
+body[data-cursor="on"] a,
+body[data-cursor="on"] button,
+body[data-cursor="on"] [role="button"] {
+  cursor: none;
+}
+
+/* Scrollbar */
+@media (min-width: 1024px) {
+  ::-webkit-scrollbar {
+    width: 9px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-soft);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--color-blue) 45%, white);
+    border-radius: 9999px;
+    border: 2px solid var(--color-soft);
+  }
+}
+
+/* ------------------------------------------------------------------
+   Utilities
+------------------------------------------------------------------ */
+@utility label-tech {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-blue);
+}
+
+@utility glass {
+  background: color-mix(in srgb, white 72%, transparent);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border: 1px solid color-mix(in srgb, var(--color-line) 80%, transparent);
+}
+
+@utility card-soft {
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-line);
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-soft);
+}
+
+/* Faint technical grid */
+@utility tech-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-line) 62%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-line) 62%, transparent) 1px, transparent 1px);
+  background-size: 72px 72px;
+}
+
+@utility tech-grid-sm {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-line) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-line) 45%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@utility dot-grid {
+  background-image: radial-gradient(color-mix(in srgb, var(--color-blue) 26%, transparent) 1px, transparent 1px);
+  background-size: 14px 14px;
+}
+
+@utility text-gradient-blue {
+  background: linear-gradient(100deg, var(--color-blue) 0%, var(--color-electric) 55%, var(--color-blue) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Big editorial display type */
+@utility display-xl {
+  font-weight: 800;
+  line-height: 0.94;
+  letter-spacing: -0.045em;
+  font-size: clamp(2.5rem, 7.2vw, 6.5rem);
+}
+
+@utility display-lg {
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-size: clamp(2.1rem, 5.2vw, 4.25rem);
+}
+
+@utility display-md {
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  font-size: clamp(1.75rem, 3.4vw, 2.75rem);
+}
+
+/* Masked line-by-line reveal */
+@utility line-mask {
+  overflow: hidden;
+  display: block;
+}
+
+/* ------------------------------------------------------------------
+   Keyframes
+------------------------------------------------------------------ */
+@keyframes bm-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -12px, 0);
+  }
+}
+
+@keyframes bm-drift {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate3d(0, -120vh, 0) rotate(220deg);
+  }
+}
+
+/* Vertical drift with no rotation — code fragments must stay readable. */
+@keyframes bm-rise {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  12%,
+  88% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(2rem, -125vh, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes bm-pulse-ring {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.55;
+  }
+  70% {
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+@keyframes bm-dash {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+
+@keyframes bm-spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes bm-sheen {
+  0% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(240%) skewX(-18deg);
+  }
+}
+
+@keyframes bm-caret {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-float {
+  animation: bm-float 7s ease-in-out infinite;
+}
+.animate-spin-slow {
+  animation: bm-spin-slow 34s linear infinite;
+}
+.animate-dash {
+  animation: bm-dash 22s linear infinite;
+}
+
+/* ------------------------------------------------------------------
+   Reduced motion
+------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-float,
+  .animate-spin-slow,
+  .animate-dash {
+    animation: none !important;
+  }
+}
+
+/* Anything that must not print / show before JS hydrates */
+.js-hidden {
+  opacity: 0;
 }

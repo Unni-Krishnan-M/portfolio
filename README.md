@@ -1,36 +1,140 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BLUE//MOTION — Unni Krishnan M
 
-## Getting Started
+An immersive, scroll-driven developer portfolio. Light futuristic editorial design, blue as the only accent, motion used as storytelling rather than decoration.
 
-First, run the development server:
+**Live:** _deploy to Vercel and add the URL here_
+
+---
+
+## Stack
+
+| Concern | Choice |
+| --- | --- |
+| Framework | Next.js 16 (App Router, `src/`) |
+| Language | TypeScript (strict) |
+| Styling | Tailwind CSS v4 — CSS-first `@theme`, no `tailwind.config.js` |
+| Scroll animation | GSAP 3.15 + ScrollTrigger, SplitText, DrawSVGPlugin, MotionPathPlugin |
+| Component motion | Framer Motion 13 |
+| Smooth scroll | Lenis (driven off the GSAP ticker) |
+| 3D | React Three Fiber 9 + drei 10 + three 0.185 |
+| Icons | lucide-react + a local brand-mark set |
+| Deployment | Vercel |
+
+No backend, no API keys, no paid services.
+
+---
+
+## Getting started
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev     # http://localhost:3000
+npm run build   # production build
+npm start       # serve the production build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Where things live
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/
+│   ├── layout.tsx            fonts, SEO metadata, JSON-LD, global chrome
+│   ├── page.tsx              section composition order
+│   ├── globals.css           design tokens, custom utilities, keyframes
+│   ├── icon.tsx              generated favicon
+│   └── opengraph-image.tsx   generated social card
+├── data/
+│   ├── profile.ts            every fact about Unni — single source of truth
+│   └── projects.ts           the real GitHub repositories
+├── lib/
+│   ├── gsap.ts               registers GSAP plugins exactly once
+│   ├── hooks.ts              useMediaQuery / useReducedMotion / useIsDesktop
+│   └── utils.ts              cn, clamp, lerp, seeded
+├── components/
+│   ├── core/                 Preloader, SmoothScroll, CustomCursor, Navigation,
+│   │                         ScrollRail, Environment, Section, Reveal,
+│   │                         SplitReveal, MagneticButton, SectionHeader
+│   ├── icons/                brand marks + the technology registry
+│   ├── three/                the hero WebGL scene (code-split, desktop only)
+│   └── sections/             Hero, About, Toolkit, Projects, Experience,
+│                             Achievements, Contact, Footer
+└── public/img/               portrait asset
+```
 
-## Learn More
+### Editing content
 
-To learn more about Next.js, take a look at the following resources:
+Almost everything is data-driven. To change a fact, edit `src/data/profile.ts`; to change the work shown, edit `src/data/projects.ts`. No component holds hardcoded copy about Unni.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Replace the portrait:** the current file is Unni's own photograph, background-removed and
+alpha-feathered to composite onto the light page. To swap it, drop a new cut-out at
+`public/img/unni-portrait.webp` (transparent background, figure fading toward the bottom) and
+update the `width`/`height` and the `aspect-[920/1021]` box in
+`src/components/sections/about/NeuralPortrait.tsx` if the dimensions differ.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Design system
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Tokens are declared in `globals.css` under `@theme`, so they're available as ordinary Tailwind classes.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Token | Value | Use |
+| --- | --- | --- |
+| `bg` | `#F7FAFF` | page background |
+| `bg-2` | `#FFFFFF` | cards, panels |
+| `blue` | `#1261FF` | primary accent |
+| `electric` | `#00C2FF` | gradient partner, glows |
+| `deep` | `#071A3D` | dark visual panels |
+| `soft` | `#EAF2FF` | tinted fills |
+| `ink` | `#07111F` | body text |
+| `muted` | `#64748B` | secondary text |
+| `line` | `#DCE7F5` | borders, hairlines |
+
+Custom utilities: `label-tech`, `glass`, `card-soft`, `tech-grid`, `tech-grid-sm`, `dot-grid`, `text-gradient-blue`, `display-xl`, `display-lg`, `display-md`.
+
+Typography is Plus Jakarta Sans for everything and JetBrains Mono for technical labels — two families, both self-hosted through `next/font`.
+
+---
+
+## Motion notes
+
+- **Preloader** — a boot sequence counting 0→100, then a clip-path wipe. Dispatches `bm:loaded`, which the hero waits on before starting its entrance timeline.
+- **Lenis + GSAP** — Lenis is stepped by `gsap.ticker` and calls `ScrollTrigger.update()`, so smooth scroll and scroll-triggered animation share one frame. `lagSmoothing(0)` keeps them locked together.
+- **Projects** — vertical scroll drives horizontal movement through a pinned track. Per-card animations use ScrollTrigger's `containerAnimation` so they trigger off horizontal position.
+- **Reduced motion** — every section renders its complete final state when `prefers-reduced-motion: reduce` is set. The preloader resolves immediately, Lenis never initialises, the WebGL scene is replaced by a CSS composition, and no scrubbed timeline runs.
+- **Mobile** — the custom cursor, WebGL scene and horizontal pinning are all disabled below `lg` / on coarse pointers. Horizontal sections become vertical storytelling; entrance animations stay.
+
+---
+
+## Accessibility
+
+- Semantic landmarks and one `<h1>`; sections use `<h2>`.
+- Skip link to content.
+- All decorative layers are `aria-hidden`; all controls are real buttons and links with accessible names.
+- The project case-study overlay is a proper modal: `role="dialog"`, focus moved in and trapped, Escape to close, focus restored on close.
+- The toolkit category switcher is a keyboard-navigable tablist.
+- `prefers-reduced-motion` fully respected.
+
+---
+
+## A note on the project copy
+
+The descriptions in `src/data/projects.ts` are written from what the repositories actually
+contain — verified against each one's `package.json` / `pyproject.toml` / `pubspec.yaml` rather
+than its README, because several READMEs describe intended rather than shipped functionality.
+Where a project is a scaffold, a front-end-only prototype, or has mock endpoints, the entry says
+so in its `status` field and the case-study overlay renders that as a "Scope note".
+
+That's deliberate. Every claim on this site should survive a follow-up question in an interview.
+
+---
+
+## Deploy
+
+```bash
+npx vercel        # or push to GitHub and import the repo at vercel.com
+```
+
+Then set `SITE` in `src/app/layout.tsx` to the real domain so canonical URLs and the
+Open Graph card resolve correctly.
