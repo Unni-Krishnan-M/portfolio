@@ -8,6 +8,7 @@ import Preloader from "@/components/core/Preloader";
 import Navigation from "@/components/core/Navigation";
 import ScrollRail from "@/components/core/ScrollRail";
 import Environment from "@/components/core/Environment";
+import WarpOverlay from "@/components/core/WarpOverlay";
 import { profile, education } from "@/data/profile";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -123,6 +124,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <SmoothScroll />
         <CustomCursor />
         <Environment />
+        <WarpOverlay />
         <Navigation />
         <ScrollRail />
 

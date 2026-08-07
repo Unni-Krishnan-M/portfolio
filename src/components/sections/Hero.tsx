@@ -154,7 +154,14 @@ export default function Hero() {
         },
       });
 
-      tl.to(copy.current, { y: -90, opacity: 0.08, ease: "none" }, 0);
+      // Leaving the hero reads as flying into the cube: the copy falls back and
+      // dims while the stage rushes toward the camera and past the frame.
+      tl.to(copy.current, { y: -110, scale: 0.94, opacity: 0.05, ease: "none" }, 0)
+        .to(
+          stage.current,
+          { scale: 1.85, y: "-5%", opacity: 0.18, ease: "power1.in" },
+          0,
+        );
 
       return () => {
         tl.scrollTrigger?.kill();

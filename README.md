@@ -101,7 +101,9 @@ Typography is Plus Jakarta Sans for everything and JetBrains Mono for technical 
 
 - **Preloader** — a boot sequence counting 0→100, then a clip-path wipe. Dispatches `bm:loaded`, which the hero waits on before starting its entrance timeline.
 - **Lenis + GSAP** — Lenis is stepped by `gsap.ticker` and calls `ScrollTrigger.update()`, so smooth scroll and scroll-triggered animation share one frame. `lagSmoothing(0)` keeps them locked together.
+- **Going inside** — the signature transition. `Gateway` is a pinned scene between the hero and About: a rounded blue-rimmed window rushes past the camera while tunnel rings and radial streaks accelerate outward, so you fly *through* into the next scene. Every other section is wrapped in `PortalSection`, which opens it from a side-inset rounded window while its contents scale up from behind. Projects is deliberately unwrapped — `clip-path` creates a containing block and would break its fixed-position pin.
 - **Projects** — vertical scroll drives horizontal movement through a pinned track. Per-card animations use ScrollTrigger's `containerAnimation` so they trigger off horizontal position.
+- **Warp overlay** — reads Lenis velocity once per frame and writes a single `--warp` custom property; radial streaks and an edge vignette scale off it, so fast scrolling feels like travel. One style write per frame regardless of streak count.
 - **Reduced motion** — every section renders its complete final state when `prefers-reduced-motion: reduce` is set. The preloader resolves immediately, Lenis never initialises, the WebGL scene is replaced by a CSS composition, and no scrubbed timeline runs.
 - **Mobile** — the custom cursor, WebGL scene and horizontal pinning are all disabled below `lg` / on coarse pointers. Horizontal sections become vertical storytelling; entrance animations stay.
 

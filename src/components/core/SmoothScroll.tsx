@@ -13,11 +13,16 @@ export default function SmoothScroll() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const lenis = new Lenis({
-      duration: 1.15,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      // Slightly longer glide with a deeper ease-out: the scroll keeps carrying
+      // after the wheel stops, which is what makes scrubbed scenes feel like
+      // camera moves rather than a scrollbar being dragged.
+      duration: 1.35,
+      easing: (t) => 1 - Math.pow(1 - t, 4),
       smoothWheel: true,
-      touchMultiplier: 1.6,
-      wheelMultiplier: 1,
+      syncTouch: true,
+      touchMultiplier: 1.5,
+      wheelMultiplier: 0.95,
+      lerp: 0.085,
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

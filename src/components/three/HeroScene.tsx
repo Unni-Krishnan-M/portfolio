@@ -202,9 +202,9 @@ function Stage({ onFirstFrame }: { onFirstFrame?: () => void }) {
     g.rotation.x = lerp(g.rotation.x, -state.pointer.y * 0.16, k);
 
     // Leaving the hero pulls the whole stage toward the viewer.
-    g.position.z = lerp(g.position.z, progress * 1.7, k);
+    g.position.z = lerp(g.position.z, progress * 4.6, k);
     g.position.y = lerp(g.position.y, 0.12 + progress * 0.35, k);
-    g.scale.setScalar(lerp(g.scale.x, 1 + progress * 0.2, k));
+    g.scale.setScalar(lerp(g.scale.x, 1 + progress * 0.55, k));
 
     state.camera.position.x = lerp(state.camera.position.x, state.pointer.x * 0.42, k);
     state.camera.position.y = lerp(state.camera.position.y, state.pointer.y * 0.28, k);
