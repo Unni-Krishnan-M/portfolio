@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { gsap } from "@/lib/gsap";
 import { seeded } from "@/lib/utils";
 
-const STREAKS = 22;
+const STREAKS = 34;
 
 /**
  * Scroll-velocity warp. Radial blue streaks rush outward from the centre when
@@ -34,7 +34,7 @@ export default function WarpOverlay() {
       last = now;
 
       // Normalise: ~45px/frame of travel is "full warp".
-      const target = Math.min(1, raw / 45);
+      const target = Math.min(1, raw / 34);
       smooth += (target - smooth) * (target > smooth ? 0.18 : 0.07);
       if (smooth < 0.001) smooth = 0;
 
@@ -50,7 +50,9 @@ export default function WarpOverlay() {
     <div
       ref={root}
       aria-hidden
-      className="pointer-events-none fixed inset-0 z-[120] overflow-hidden opacity-0 transition-opacity duration-300"
+      // z-5: behind <main> (z-10), above the ambient environment (z-0). At z-120 the
+      // streaks painted over card text and muddied every light surface.
+      className="pointer-events-none fixed inset-0 z-[5] overflow-hidden opacity-0 transition-opacity duration-300"
       style={{ ["--warp" as string]: 0 }}
     >
       {/* streaks radiating from the centre */}
@@ -63,12 +65,12 @@ export default function WarpOverlay() {
             key={i}
             className="absolute top-1/2 left-1/2 origin-left"
             style={{
-              height: 1.5,
+              height: 2,
               width: `${len}vmax`,
               background:
-                "linear-gradient(90deg, rgba(18,97,255,0) 0%, rgba(18,97,255,0.55) 45%, rgba(0,194,255,0.75) 100%)",
+                "linear-gradient(90deg, rgba(18,97,255,0) 0%, rgba(18,97,255,0.8) 45%, rgba(0,194,255,1) 100%)",
               transform: `rotate(${angle}deg) translateX(${dist}vmax) scaleX(calc(var(--warp) * 1))`,
-              opacity: `calc(var(--warp) * 0.9)`,
+              opacity: `calc(var(--warp) * 1)`,
             }}
           />
         );
@@ -79,7 +81,7 @@ export default function WarpOverlay() {
         className="absolute inset-0"
         style={{
           background:
-            "radial-gradient(120% 90% at 50% 50%, transparent 42%, rgba(18,97,255,0.13) 100%)",
+            "radial-gradient(120% 90% at 50% 50%, transparent 38%, rgba(18,97,255,0.2) 100%)",
           opacity: "calc(var(--warp) * 1)",
         }}
       />

@@ -27,6 +27,9 @@ export default function ProjectCard({
 }: Props) {
   const root = useRef<HTMLElement>(null);
   const [active, setActive] = useState(false);
+  // The entrance tween and the hover tilt both write this element's transform
+  // matrix, so they must never run at once — the tilt waits for the entrance.
+  const entered = useRef(false);
 
   useGSAP(
     () => {
@@ -36,6 +39,7 @@ export default function ProjectCard({
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (reduced) {
         setActive(true);
+        entered.current = true;
         gsap.set(el, { opacity: 1 });
         gsap.set(el.querySelectorAll("[data-stage]"), { opacity: 1, y: 0, x: 0, scale: 1 });
         return;
@@ -45,6 +49,9 @@ export default function ProjectCard({
       const tl = gsap.timeline({
         paused: true,
         onStart: () => setActive(true),
+        onComplete: () => {
+          entered.current = true;
+        },
       });
 
       tl.fromTo(el, { opacity: 0, scale: 0.9, rotate: 2 }, { opacity: 1, scale: 1, rotate: 0, duration: 0.75, ease: "expo.out" })
@@ -71,13 +78,36 @@ export default function ProjectCard({
     { scope: root, dependencies: [horizontal, containerAnimation] },
   );
 
-  // Cursor-following blue light — written straight to CSS vars, no re-render.
+  // Cursor light + 3D tilt, both written straight to the element — no state, so
+  // this costs nothing per frame beyond two style writes.
   const onMove = (e: React.MouseEvent<HTMLElement>) => {
     const el = root.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    el.style.setProperty("--mx", `${e.clientX - r.left}px`);
-    el.style.setProperty("--my", `${e.clientY - r.top}px`);
+    const px = e.clientX - r.left;
+    const py = e.clientY - r.top;
+    el.style.setProperty("--mx", `${px}px`);
+    el.style.setProperty("--my", `${py}px`);
+
+    if (!entered.current) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Rotate away from the cursor, so the card appears to lean under it.
+    const ry = ((px / r.width) - 0.5) * 13;
+    const rx = -((py / r.height) - 0.5) * 11;
+    gsap.to(el, {
+      rotateY: ry,
+      rotateX: rx,
+      transformPerspective: 1100,
+      duration: 0.5,
+      ease: "power2.out",
+      overwrite: "auto",
+    });
+  };
+
+  const onLeave = () => {
+    const el = root.current;
+    if (!el || !entered.current) return;
+    gsap.to(el, { rotateY: 0, rotateX: 0, duration: 0.8, ease: "power3.out", overwrite: "auto" });
   };
 
   const open = (e: React.MouseEvent) => onOpen(project, { x: e.clientX, y: e.clientY });
@@ -88,9 +118,10 @@ export default function ProjectCard({
       data-project-card
       data-cursor="VIEW PROJECT"
       onMouseMove={onMove}
+      onMouseLeave={onLeave}
       className={cn(
         "group card-soft relative flex shrink-0 flex-col overflow-hidden opacity-0",
-        "transition-[box-shadow,transform,border-color] duration-500 hover:-translate-y-1.5 hover:border-blue/25 hover:shadow-lift",
+        "transition-[box-shadow,border-color] duration-500 hover:border-blue/30 hover:shadow-lift [transform-style:preserve-3d] will-change-transform",
         horizontal ? "w-[clamp(20rem,26vw,25rem)]" : "w-full",
       )}
     >

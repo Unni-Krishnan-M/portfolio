@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
 import { Boxes } from "lucide-react";
 import Section from "@/components/core/Section";
@@ -9,7 +10,10 @@ import SplitReveal from "@/components/core/SplitReveal";
 import Constellation from "./toolkit/Constellation";
 import { toolkit } from "@/data/profile";
 import { cn } from "@/lib/utils";
-import { useReducedMotion } from "@/lib/hooks";
+
+// Code-split: the 3D constellation only costs anything on devices that load it.
+const ToolkitScene = dynamic(() => import("@/components/three/ToolkitScene"), { ssr: false });
+import { useIsDesktop, useReducedMotion } from "@/lib/hooks";
 
 /** Which category owns a given technology name — first match wins. */
 const CATEGORY_OF: Record<string, string> = {};
@@ -22,8 +26,11 @@ for (const cat of toolkit) {
 export default function Toolkit() {
   const [activeId, setActiveId] = useState(toolkit[0].id);
   const [hovered, setHovered] = useState<string | null>(null);
+  const [scene3d, setScene3d] = useState(false);
+  const isDesktop = useIsDesktop();
   const tabEls = useRef<(HTMLButtonElement | null)[]>([]);
   const reduced = useReducedMotion();
+  const use3D = isDesktop && !reduced;
 
   // Hovering a node previews its category; clicking pins it.
   const shownId = (hovered ? CATEGORY_OF[hovered] : undefined) ?? activeId;
@@ -115,8 +122,30 @@ export default function Toolkit() {
           </div>
         </div>
 
-        {/* ---- constellation ---- */}
-        <Constellation hovered={hovered} onHover={setHovered} onSelect={onSelect} />
+        {/* ---- constellation ----
+             The CSS/SVG version is the base layer and stays interactive; the 3D
+             scene fades in over it once WebGL has proven it renders, and the
+             hovered technology drives both. */}
+        <div className="relative">
+          {/* Faded to 0 but still hit-testable — an opacity-0 element keeps
+              receiving pointer events, so hover and keyboard focus stay on these
+              nodes while the WebGL layer above (pointer-events-none) draws. */}
+          <div
+            className="transition-opacity duration-700"
+            style={{ opacity: scene3d ? 0 : 1 }}
+          >
+            <Constellation hovered={hovered} onHover={setHovered} onSelect={onSelect} />
+          </div>
+
+          {use3D ? (
+            <div
+              className="pointer-events-none absolute inset-0 transition-opacity duration-700"
+              style={{ opacity: scene3d ? 1 : 0 }}
+            >
+              <ToolkitScene activeName={hovered} onFirstFrame={() => setScene3d(true)} />
+            </div>
+          ) : null}
+        </div>
 
         {/* ---- detail panel ---- */}
         <div

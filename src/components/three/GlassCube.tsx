@@ -106,29 +106,50 @@ export default function GlassCube() {
             visible, which is what reads as glass. */}
         <RoundedBox args={[2.16, 2.16, 2.16]} radius={0.11} smoothness={3} bevelSegments={3}>
           <meshPhysicalMaterial
-            color="#e8f2ff"
+            color="#8fbaff"
             transparent
-            opacity={0.36}
+            opacity={0.5}
             depthWrite={false}
             side={THREE.DoubleSide}
-            roughness={0.04}
-            metalness={0}
-            ior={1.5}
+            roughness={0.02}
+            metalness={0.1}
+            ior={1.6}
             clearcoat={1}
-            clearcoatRoughness={0.03}
-            specularIntensity={1.5}
+            clearcoatRoughness={0.02}
+            specularIntensity={2}
             specularColor="#ffffff"
-            envMapIntensity={2.6}
-            iridescence={0.55}
-            iridescenceIOR={1.35}
-            sheen={0.6}
-            sheenColor="#9dc4ff"
+            envMapIntensity={3.4}
+            iridescence={0.9}
+            iridescenceIOR={1.4}
+            iridescenceThicknessRange={[120, 560]}
+            sheen={1}
+            sheenRoughness={0.25}
+            sheenColor="#4d8cff"
+            emissive="#1261ff"
+            emissiveIntensity={0.12}
           />
         </RoundedBox>
 
+        {/* Inner core — refracted through the shell it gives the crystal depth
+            instead of reading as an empty box. */}
+        <mesh scale={0.46}>
+          <icosahedronGeometry args={[1, 0]} />
+          <meshPhysicalMaterial
+            color="#1261ff"
+            transparent
+            opacity={0.3}
+            roughness={0.1}
+            metalness={0.4}
+            emissive="#00c2ff"
+            emissiveIntensity={0.5}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+
         {/* Hairline edges keep the silhouette readable against a white page. */}
         <lineSegments geometry={edges}>
-          <lineBasicMaterial color={BLUE} transparent opacity={0.4} toneMapped={false} />
+          <lineBasicMaterial color={BLUE} transparent opacity={0.85} toneMapped={false} />
         </lineSegments>
       </group>
     </group>

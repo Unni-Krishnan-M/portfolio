@@ -16,7 +16,7 @@ An immersive, scroll-driven developer portfolio. Light futuristic editorial desi
 | Scroll animation | GSAP 3.15 + ScrollTrigger, SplitText, DrawSVGPlugin, MotionPathPlugin |
 | Component motion | Framer Motion 13 |
 | Smooth scroll | Lenis (driven off the GSAP ticker) |
-| 3D | React Three Fiber 9 + drei 10 + three 0.185 |
+| 3D | React Three Fiber 9 + drei 10 + three 0.185 (hero cube + toolkit constellation) |
 | Icons | lucide-react + a local brand-mark set |
 | Deployment | Vercel |
 
@@ -116,7 +116,9 @@ Typography is Plus Jakarta Sans for everything and JetBrains Mono for technical 
   velocity into its `timeScale`, so it lurches when you scroll hard. Two identical
   rows wrapping at `-50%` make the loop seamless with no measurement.
 - **Projects** — vertical scroll drives horizontal movement through a pinned track. Per-card animations use ScrollTrigger's `containerAnimation` so they trigger off horizontal position.
-- **Warp overlay** — reads Lenis velocity once per frame and writes a single `--warp` custom property; radial streaks and an edge vignette scale off it, so fast scrolling feels like travel. One style write per frame regardless of streak count.
+- **Warp overlay** — reads Lenis velocity once per frame and writes a single `--warp` custom property; radial streaks and an edge vignette scale off it, so fast scrolling feels like travel. One style write per frame regardless of streak count. It sits at `z-5`, **behind** `<main>` — above the content it painted over card text and muddied every light surface.
+- **Two WebGL scenes**, both code-split and both gated on a proven first frame: the hero crystal, and the toolkit constellation (faceted core, three tilted orbit rings, glossy nodes with DOM labels tracked in 3D via drei `Html`, dust field). The CSS/SVG constellation stays underneath at `opacity: 0` — still hit-testable, so hover and keyboard focus keep working while WebGL does the drawing.
+- **Project cards tilt** toward the cursor in real perspective. The tilt is gated on the entrance timeline completing: both write the same transform matrix and would otherwise fight.
 - **Reduced motion** — every section renders its complete final state when `prefers-reduced-motion: reduce` is set. The preloader resolves immediately, Lenis never initialises, the WebGL scene is replaced by a CSS composition, and no scrubbed timeline runs.
 - **Mobile** — the custom cursor, WebGL scene and horizontal pinning are all disabled below `lg` / on coarse pointers. Horizontal sections become vertical storytelling; entrance animations stay.
 
