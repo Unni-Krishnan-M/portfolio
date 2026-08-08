@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { X, Info, ExternalLink, Calendar } from "lucide-react";
+import { X, Info, ExternalLink } from "lucide-react";
 import { gsap, useGSAP } from "@/lib/gsap";
+import { NotebookCell, Readout } from "@/components/core/ai";
 import { GithubIcon } from "@/components/icons/Brand";
 import { techMark } from "@/components/icons/tech";
 import MagneticButton from "@/components/core/MagneticButton";
+import { DUR, EASE, STAGGER, reducedMotion } from "@/lib/motion";
 import type { Project } from "@/data/projects";
 import ProjectVisual from "./ProjectVisual";
 
@@ -72,7 +74,6 @@ export default function ProjectOverlay({ project, origin, onClose }: Props) {
       const el = root.current;
       if (!el) return;
 
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const x = origin.x;
       const y = origin.y;
       const far = Math.hypot(
@@ -82,10 +83,11 @@ export default function ProjectOverlay({ project, origin, onClose }: Props) {
 
       closeBtn.current?.focus();
 
-      if (reduced) {
+      if (reducedMotion()) {
         gsap.set(el, { clipPath: "none", opacity: 1 });
         gsap.set("[data-warp-ring]", { opacity: 0 });
         gsap.set("[data-ov]", { opacity: 1, y: 0 });
+        gsap.set("[data-ro-item]", { opacity: 1, y: 0 });
         return;
       }
 
@@ -94,20 +96,23 @@ export default function ProjectOverlay({ project, origin, onClose }: Props) {
       tl.fromTo(
         el,
         { clipPath: `circle(0px at ${x}px ${y}px)` },
-        { clipPath: `circle(${far}px at ${x}px ${y}px)`, duration: 0.66, ease: "expo.inOut" },
+        { clipPath: `circle(${far}px at ${x}px ${y}px)`, duration: DUR.base, ease: EASE.inOut },
       )
         .fromTo(
           "[data-warp-ring]",
           { scale: 0, opacity: 0.65 },
-          { scale: 3.4, opacity: 0, duration: 0.85, stagger: 0.07, ease: "expo.out" },
+          { scale: 3.4, opacity: 0, duration: DUR.slow, stagger: STAGGER.base, ease: EASE.expo },
           0,
         )
         .fromTo(
           "[data-ov]",
           { opacity: 0, y: 26 },
-          { opacity: 1, y: 0, duration: 0.7, stagger: 0.06, ease: "power3.out" },
+          { opacity: 1, y: 0, duration: DUR.base, stagger: STAGGER.base, ease: EASE.out },
           0.3,
-        );
+        )
+        // The Readout self-reveals on scroll; inside a fixed dialog there is no
+        // scroll to wait for, so guarantee its end state.
+        .set("[data-ro-item]", { opacity: 1, y: 0 }, 0.9);
 
       return () => tl.kill();
     },
@@ -116,14 +121,14 @@ export default function ProjectOverlay({ project, origin, onClose }: Props) {
 
   const close = () => {
     const el = root.current;
-    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (!el || reducedMotion()) {
       onClose();
       return;
     }
     gsap.to(el, {
       clipPath: `circle(0px at ${origin.x}px ${origin.y}px)`,
-      duration: 0.5,
-      ease: "expo.inOut",
+      duration: DUR.fast,
+      ease: EASE.inOut,
       onComplete: onClose,
     });
   };
@@ -165,12 +170,19 @@ export default function ProjectOverlay({ project, origin, onClose }: Props) {
 
       <div ref={panel} className="relative z-20 mx-auto max-w-5xl px-6 py-14 sm:px-10 sm:py-20">
         <div data-ov className="mb-10 flex items-start justify-between gap-6">
-          <div>
+          <div className="min-w-0">
             <p className="label-tech mb-3">{project.category}</p>
             <h2 id="bm-case-title" className="display-md max-w-2xl text-ink">
               {project.name}
             </h2>
             <p className="mt-3 text-[1.05rem] text-blue">{project.tagline}</p>
+            <Readout
+              items={[
+                { k: "year", v: project.year },
+                ...(project.live ? [{ k: "status", v: "live" }] : []),
+              ]}
+              className="mt-4"
+            />
           </div>
           <button
             ref={closeBtn}
@@ -203,36 +215,30 @@ export default function ProjectOverlay({ project, origin, onClose }: Props) {
         ) : null}
 
         <div className="mt-12 grid gap-12 lg:grid-cols-[1.55fr_1fr]">
-          <div data-ov className="space-y-5">
+          {/* The case study reads as a notebook: one cell per beat. */}
+          <div data-ov className="space-y-7">
             {project.detail.map((para, i) => (
-              <p key={i} className="text-[1rem] leading-[1.75] text-muted">
-                {para}
-              </p>
+              <NotebookCell key={i} n={i + 1}>
+                <p className="text-[1rem] leading-[1.75] text-muted">{para}</p>
+              </NotebookCell>
             ))}
           </div>
 
-          <div className="space-y-8">
-            <div data-ov>
-              <p className="label-tech mb-4">Built with</p>
-              <div className="flex flex-wrap gap-2">
-                {project.stack.map((tech) => {
-                  const { node } = techMark(tech);
-                  return (
-                    <span
-                      key={tech}
-                      className="inline-flex items-center gap-2 rounded-lg border border-line bg-bg-2 px-2.5 py-1.5 text-[0.78rem] font-medium text-ink"
-                    >
-                      <span className="size-3.5">{node}</span>
-                      {tech}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div data-ov className="flex items-center gap-2 font-mono text-[0.68rem] tracking-[0.12em] text-muted">
-              <Calendar className="size-3.5 text-blue" />
-              {project.year}
+          <div data-ov>
+            <p className="label-tech mb-4">Built with</p>
+            <div className="flex flex-wrap gap-2">
+              {project.stack.map((tech) => {
+                const { node } = techMark(tech);
+                return (
+                  <span
+                    key={tech}
+                    className="inline-flex items-center gap-2 rounded-lg border border-line bg-bg-2 px-2.5 py-1.5 text-[0.78rem] font-medium text-ink"
+                  >
+                    <span className="size-3.5">{node}</span>
+                    {tech}
+                  </span>
+                );
+              })}
             </div>
           </div>
         </div>

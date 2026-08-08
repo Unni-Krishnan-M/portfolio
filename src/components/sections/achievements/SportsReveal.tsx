@@ -3,13 +3,23 @@
 import { useRef } from "react";
 import { Trophy } from "lucide-react";
 import { gsap, useGSAP } from "@/lib/gsap";
+import { DUR, EASE, STAGGER, reducedMotion } from "@/lib/motion";
 import { sportsAchievement } from "@/data/profile";
 
+/**
+ * Deliberately not AI-themed — this is the human counterpoint to the rest of the
+ * section, so it gets no charts, no telemetry. Only the streak.
+ *
+ * `lead` is the trailing distance behind the leading edge, so the layers arrive
+ * as one body passing rather than four independent bars; `lift` offsets each
+ * layer vertically by a hair so the trail frays the way real motion blur does.
+ */
 const TRAILS = [
-  { delay: 0, opacity: 0.95, height: "38%" },
-  { delay: 0.05, opacity: 0.4, height: "22%" },
-  { delay: 0.1, opacity: 0.22, height: "12%" },
-  { delay: 0.16, opacity: 0.12, height: "6%" },
+  { lead: 0, opacity: 0.95, height: "38%", lift: 0, width: "58%" },
+  { lead: 0.05, opacity: 0.4, height: "22%", lift: -6, width: "52%" },
+  { lead: 0.1, opacity: 0.22, height: "12%", lift: 5, width: "46%" },
+  { lead: 0.16, opacity: 0.12, height: "6%", lift: -11, width: "40%" },
+  { lead: 0.21, opacity: 0.08, height: "3%", lift: 9, width: "34%" },
 ];
 
 const SPEED_LINES = [0.18, 0.34, 0.52, 0.68, 0.82];
@@ -28,58 +38,61 @@ export default function SportsReveal() {
 
       const streaks = gsap.utils.toArray<HTMLElement>("[data-streak]", el);
       const lines = gsap.utils.toArray<HTMLElement>("[data-speed-line]", el);
+      const glow = el.querySelector<HTMLElement>("[data-afterglow]");
       const place = el.querySelector<HTMLElement>("[data-place]");
       const body = gsap.utils.toArray<HTMLElement>("[data-reveal-body]", el);
       const badge = el.querySelector<HTMLElement>("[data-trophy]");
 
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-      if (reduced) {
+      if (reducedMotion()) {
         gsap.set(place, { clipPath: "inset(-12% 0% -12% 0%)", opacity: 1 });
         gsap.set(body, { opacity: 1, y: 0 });
         gsap.set(badge, { opacity: 1, scale: 1 });
-        gsap.set([...streaks, ...lines], { opacity: 0 });
+        gsap.set([...streaks, ...lines, glow], { opacity: 0 });
         return;
       }
 
       gsap.set(streaks, { xPercent: -120, opacity: 0 });
       gsap.set(lines, { opacity: 0, scaleX: 0.2, x: -40 });
+      gsap.set(glow, { opacity: 0, scaleX: 0.4 });
       gsap.set(place, { clipPath: "inset(-12% 100% -12% 0%)", opacity: 1 });
       gsap.set(body, { opacity: 0, y: 18 });
       gsap.set(badge, { opacity: 0, scale: 0.6, rotate: -22 });
 
       const tl = gsap.timeline({
-        defaults: { ease: "expo.out" },
+        defaults: { ease: EASE.expo },
         scrollTrigger: { trigger: el, start: "top 76%", once: true },
       });
 
       streaks.forEach((streak, i) => {
         const cfg = TRAILS[i] ?? TRAILS[TRAILS.length - 1];
-        tl.to(streak, { opacity: cfg.opacity, duration: 0.08, ease: "none" }, cfg.delay);
-        tl.to(streak, { xPercent: 210, duration: 0.5 }, cfg.delay);
-        tl.to(streak, { opacity: 0, duration: 0.22, ease: "none" }, cfg.delay + 0.34);
+        tl.to(streak, { opacity: cfg.opacity, duration: 0.08, ease: EASE.none }, cfg.lead);
+        tl.to(streak, { xPercent: 210, duration: 0.5 }, cfg.lead);
+        tl.to(streak, { opacity: 0, duration: 0.22, ease: EASE.none }, cfg.lead + 0.34);
       });
 
       // Text wipes open behind the leading edge of the streak.
       tl.to(place, { clipPath: "inset(-12% 0% -12% 0%)", duration: 0.55 }, 0.09);
 
-      tl.to(
+      tl.to(lines, { opacity: 1, scaleX: 1, x: 0, duration: 0.4, stagger: STAGGER.tight }, 0.05).to(
         lines,
-        {
-          opacity: 1,
-          scaleX: 1,
-          x: 0,
-          duration: 0.4,
-          stagger: 0.03,
-        },
-        0.05,
-      ).to(lines, { opacity: 0, x: 60, duration: 0.5, stagger: 0.03 }, 0.42);
+        { opacity: 0, x: 60, duration: 0.5, stagger: STAGGER.tight },
+        0.42,
+      );
+
+      // The wake lingers for a beat after the streak has gone.
+      tl.to(glow, { opacity: 1, scaleX: 1, duration: DUR.fast, ease: EASE.out }, 0.3).to(
+        glow,
+        { opacity: 0, duration: DUR.slow, ease: EASE.inOut },
+        0.72,
+      );
 
       tl.to(badge, { opacity: 1, scale: 1, rotate: 0, duration: 0.8, ease: "back.out(1.7)" }, 0.24);
-      tl.to(body, { opacity: 1, y: 0, duration: 0.8, stagger: 0.07 }, 0.38);
+      tl.to(body, { opacity: 1, y: 0, duration: 0.8, stagger: STAGGER.base }, 0.38);
 
       // slow idle shimmer on the trophy so the block never sits dead
-      tl.to(badge, { y: -5, duration: 2.6, ease: "sine.inOut", yoyo: true, repeat: -1 }, 1.2);
+      tl.to(badge, { y: -5, duration: DUR.amble, ease: "sine.inOut", yoyo: true, repeat: -1 }, 1.2);
+
+      return () => tl.kill();
     },
     { scope: root },
   );
@@ -91,20 +104,21 @@ export default function SportsReveal() {
         Beyond Code
       </h3>
 
-      <div
-        ref={root}
-        className="card-soft relative mt-6 overflow-hidden px-6 py-8 sm:px-8 sm:py-10"
-      >
+      <div ref={root} className="card-soft relative mt-6 overflow-hidden px-6 py-8 sm:px-8 sm:py-10">
         <span aria-hidden className="pointer-events-none absolute inset-0 dot-grid opacity-[0.35]" />
 
         {/* light streak + motion trail */}
         <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+          <span
+            data-afterglow
+            className="absolute inset-x-0 top-1/2 h-[46%] origin-center -translate-y-1/2 bg-gradient-to-r from-transparent via-blue/[0.09] to-transparent opacity-0 blur-md"
+          />
           {TRAILS.map((t, i) => (
             <span
               key={i}
               data-streak
-              className="absolute left-0 top-1/2 w-[58%] -translate-y-1/2 rounded-full bg-gradient-to-r from-transparent via-electric to-blue opacity-0 blur-[1px]"
-              style={{ height: t.height }}
+              className="absolute left-0 top-1/2 rounded-full bg-gradient-to-r from-transparent via-electric to-blue opacity-0 blur-[1px]"
+              style={{ height: t.height, width: t.width, marginTop: t.lift }}
             />
           ))}
           {SPEED_LINES.map((top, i) => (

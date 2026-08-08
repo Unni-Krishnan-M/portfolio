@@ -3,8 +3,10 @@
 import { useRef, useState } from "react";
 import { ArrowUpRight, Maximize2 } from "lucide-react";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
+import { Brackets, Readout } from "@/components/core/ai";
 import { GithubIcon } from "@/components/icons/Brand";
 import { techMark } from "@/components/icons/tech";
+import { DUR, EASE, STAGGER, reducedMotion } from "@/lib/motion";
 import type { Project } from "@/data/projects";
 import { cn } from "@/lib/utils";
 import ProjectVisual from "./ProjectVisual";
@@ -26,18 +28,24 @@ export default function ProjectCard({
   horizontal,
 }: Props) {
   const root = useRef<HTMLElement>(null);
+  const scanBar = useRef<HTMLSpanElement>(null);
+  const scan = useRef<gsap.core.Timeline | null>(null);
   const [active, setActive] = useState(false);
   // The entrance tween and the hover tilt both write this element's transform
   // matrix, so they must never run at once — the tilt waits for the entrance.
   const entered = useRef(false);
+
+  // Two metrics, no more: the card is a summary, the overlay is the report.
+  const telemetry = (project.metrics ?? [])
+    .slice(0, 2)
+    .map((m) => ({ k: m.label.toLowerCase(), v: m.value }));
 
   useGSAP(
     () => {
       const el = root.current;
       if (!el) return;
 
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduced) {
+      if (reducedMotion()) {
         setActive(true);
         entered.current = true;
         gsap.set(el, { opacity: 1 });
@@ -45,7 +53,7 @@ export default function ProjectCard({
         return;
       }
 
-      // Staged assembly: number → title → chips → visual → body → footer.
+      // Staged assembly: number → title → visual → chips → body → footer.
       const tl = gsap.timeline({
         paused: true,
         onStart: () => setActive(true),
@@ -54,13 +62,13 @@ export default function ProjectCard({
         },
       });
 
-      tl.fromTo(el, { opacity: 0, scale: 0.9, rotate: 2 }, { opacity: 1, scale: 1, rotate: 0, duration: 0.75, ease: "expo.out" })
-        .fromTo('[data-stage="num"]', { opacity: 0, x: -18 }, { opacity: 1, x: 0, duration: 0.5 }, 0.08)
-        .fromTo('[data-stage="title"]', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 }, 0.14)
-        .fromTo('[data-stage="visual"]', { opacity: 0, scaleY: 0.72, transformOrigin: "50% 50%" }, { opacity: 1, scaleY: 1, duration: 0.7, ease: "expo.out" }, 0.2)
-        .fromTo('[data-stage="chip"]', { opacity: 0, y: 12, scale: 0.85 }, { opacity: 1, y: 0, scale: 1, duration: 0.45, stagger: 0.05 }, 0.34)
-        .fromTo('[data-stage="body"]', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.55 }, 0.42)
-        .fromTo('[data-stage="foot"]', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: 0.5 }, 0.52);
+      tl.fromTo(el, { opacity: 0, scale: 0.9, rotate: 2 }, { opacity: 1, scale: 1, rotate: 0, duration: DUR.base, ease: EASE.expo })
+        .fromTo('[data-stage="num"]', { opacity: 0, x: -18 }, { opacity: 1, x: 0, duration: DUR.fast, ease: EASE.out }, 0.08)
+        .fromTo('[data-stage="title"]', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: DUR.base, ease: EASE.out }, 0.14)
+        .fromTo('[data-stage="visual"]', { opacity: 0, scaleY: 0.72, transformOrigin: "50% 50%" }, { opacity: 1, scaleY: 1, duration: DUR.base, ease: EASE.expo }, 0.2)
+        .fromTo('[data-stage="chip"]', { opacity: 0, y: 12, scale: 0.85 }, { opacity: 1, y: 0, scale: 1, duration: DUR.fast, stagger: STAGGER.base, ease: EASE.out }, 0.34)
+        .fromTo('[data-stage="body"]', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: DUR.base, ease: EASE.out }, 0.42)
+        .fromTo('[data-stage="foot"]', { opacity: 0, y: 12 }, { opacity: 1, y: 0, duration: DUR.fast, stagger: STAGGER.tight, ease: EASE.out }, 0.52);
 
       const st = ScrollTrigger.create({
         trigger: el,
@@ -70,9 +78,26 @@ export default function ProjectCard({
         onEnter: () => tl.play(),
       });
 
+      // Inference bar: a scanning line crossing the visual, as if a model were
+      // reading the frame. Built paused; hover drives it.
+      const bar = scanBar.current;
+      if (bar) {
+        scan.current = gsap
+          .timeline({ paused: true, repeat: -1, repeatDelay: 0.2 })
+          .fromTo(
+            bar,
+            { yPercent: -115, opacity: 0 },
+            { yPercent: -45, opacity: 1, duration: DUR.fast, ease: EASE.none },
+          )
+          .to(bar, { yPercent: 55, duration: DUR.base, ease: EASE.none })
+          .to(bar, { yPercent: 115, opacity: 0, duration: DUR.fast, ease: EASE.none });
+      }
+
       return () => {
         st.kill();
         tl.kill();
+        scan.current?.kill();
+        scan.current = null;
       };
     },
     { scope: root, dependencies: [horizontal, containerAnimation] },
@@ -90,7 +115,7 @@ export default function ProjectCard({
     el.style.setProperty("--my", `${py}px`);
 
     if (!entered.current) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (reducedMotion()) return;
     // Rotate away from the cursor, so the card appears to lean under it.
     const ry = ((px / r.width) - 0.5) * 13;
     const rx = -((py / r.height) - 0.5) * 11;
@@ -98,16 +123,24 @@ export default function ProjectCard({
       rotateY: ry,
       rotateX: rx,
       transformPerspective: 1100,
-      duration: 0.5,
-      ease: "power2.out",
+      duration: DUR.fast,
+      ease: EASE.out,
       overwrite: "auto",
     });
   };
 
+  const onEnter = () => {
+    if (reducedMotion()) return;
+    scan.current?.play(0);
+  };
+
   const onLeave = () => {
+    scan.current?.pause();
+    if (scanBar.current) gsap.to(scanBar.current, { opacity: 0, duration: DUR.fast });
+
     const el = root.current;
     if (!el || !entered.current) return;
-    gsap.to(el, { rotateY: 0, rotateX: 0, duration: 0.8, ease: "power3.out", overwrite: "auto" });
+    gsap.to(el, { rotateY: 0, rotateX: 0, duration: DUR.base, ease: EASE.out, overwrite: "auto" });
   };
 
   const open = (e: React.MouseEvent) => onOpen(project, { x: e.clientX, y: e.clientY });
@@ -118,6 +151,7 @@ export default function ProjectCard({
       data-project-card
       data-cursor="VIEW PROJECT"
       onMouseMove={onMove}
+      onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       className={cn(
         "group card-soft relative flex shrink-0 flex-col overflow-hidden opacity-0",
@@ -139,10 +173,20 @@ export default function ProjectCard({
         type="button"
         onClick={open}
         aria-label={`Open case study for ${project.name}`}
-        className="relative block cursor-none text-left"
+        className="relative block cursor-none overflow-hidden text-left"
       >
         <span data-stage="visual" className="block">
           <ProjectVisual variant={project.visual} active={active} className="aspect-16/10 w-full" />
+        </span>
+
+        {/* inference bar — sweeps the frame while hovered */}
+        <span
+          ref={scanBar}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-0"
+        >
+          <span className="absolute inset-x-0 top-0 h-[38%] bg-[linear-gradient(180deg,transparent,rgb(0_194_255/0.18))]" />
+          <span className="absolute inset-x-0 top-[38%] h-px bg-electric/80 shadow-[0_0_12px_rgb(0_194_255/0.75)]" />
         </span>
 
         {/* number + live badge over the visual */}
@@ -163,6 +207,15 @@ export default function ProjectCard({
           </span>
         ) : null}
 
+        {/* corner data tag — the year, written like an attribute */}
+        <span
+          data-stage="foot"
+          aria-hidden
+          className="absolute bottom-3 left-4 font-mono text-[0.58rem] tracking-[0.12em] text-white/55"
+        >
+          data-year=<span className="text-electric/80">&quot;{project.year}&quot;</span>
+        </span>
+
         <span className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-400 group-hover:opacity-100">
           <span className="flex size-12 items-center justify-center rounded-full bg-blue/90 text-white shadow-glow backdrop-blur-sm">
             <Maximize2 className="size-4.5" />
@@ -182,7 +235,14 @@ export default function ProjectCard({
           {project.summary}
         </p>
 
-        <div className="mt-5 flex flex-wrap gap-1.5">
+        {telemetry.length ? (
+          <Readout
+            items={telemetry}
+            className="mt-5 rounded-lg border border-line bg-bg px-3 py-2.5"
+          />
+        ) : null}
+
+        <div className="mt-4 flex flex-wrap gap-1.5">
           {project.stack.slice(0, 4).map((tech) => {
             const { node } = techMark(tech);
             return (
@@ -233,6 +293,11 @@ export default function ProjectCard({
           </button>
         </div>
       </div>
+
+      {/* Instrumented framing. Last in the stack so the corners stay visible over
+          the dark visual panel, but inset into the card's own padding gutter so
+          they never sit on top of copy. */}
+      <Brackets className="inset-2.5 z-30 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
     </article>
   );
 }

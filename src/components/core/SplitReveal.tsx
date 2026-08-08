@@ -2,6 +2,7 @@
 
 import { useRef, type ElementType, type ReactNode } from "react";
 import { gsap, SplitText, useGSAP } from "@/lib/gsap";
+import { DUR, EASE } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 type SplitRevealProps = {
@@ -28,7 +29,7 @@ export default function SplitReveal({
   type = "lines",
   delay = 0,
   stagger = 0.09,
-  duration = 1.1,
+  duration = DUR.slow,
   as: TagProp = "div",
   start = "top 85%",
   immediate = false,
@@ -61,7 +62,7 @@ export default function SplitReveal({
         duration,
         delay,
         stagger,
-        ease: "expo.out",
+        ease: EASE.expo,
         ...(immediate
           ? {}
           : {

@@ -28,7 +28,7 @@ const NODES: Node[] = orbits.flatMap((o, ring) =>
   o.names.map((name, i) => ({
     name,
     ring,
-    radius: 1.9 + ring * 0.92,
+    radius: 1.55 + ring * 0.72,
     // Alternate direction per ring so the system reads as a mechanism.
     speed: (ring % 2 === 0 ? 1 : -1) * (0.2 - ring * 0.04),
     phase: (i / o.names.length) * Math.PI * 2 + ring * 0.5,
@@ -213,9 +213,9 @@ function Dust({ count = 140 }: { count?: number }) {
   const geo = useMemo(() => {
     const pos = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
-      const r = 1.4 + seeded(i * 2.3) * 4.4;
+      const r = 1.2 + seeded(i * 2.3) * 3.4;
       const a = seeded(i * 3.7) * Math.PI * 2;
-      const y = (seeded(i * 5.9) - 0.5) * 3.2;
+      const y = (seeded(i * 5.9) - 0.5) * 2.6;
       pos[i * 3] = Math.cos(a) * r;
       pos[i * 3 + 1] = y;
       pos[i * 3 + 2] = Math.sin(a) * r;
@@ -261,7 +261,7 @@ function Rig({ activeName }: { activeName: string | null }) {
     <group ref={group}>
       <Core />
       {orbits.map((_, ring) => (
-        <Ring key={ring} radius={1.9 + ring * 0.92} tilt={0.22 + ring * 0.19} />
+        <Ring key={ring} radius={1.55 + ring * 0.72} tilt={0.22 + ring * 0.19} />
       ))}
       <Orbiters activeName={activeName} />
       <Dust />
@@ -284,7 +284,9 @@ export default function ToolkitScene({
       <Canvas
         dpr={[1, 1.5]}
         frameloop="always"
-        camera={{ position: [0, 1.1, 7.4], fov: 42 }}
+        // Centred and pulled back so the outer ring plus its labels sit inside
+        // the square frame with margin, rather than clipping at the edges.
+        camera={{ position: [0, 0, 9.4], fov: 40 }}
         gl={{ alpha: true, antialias: true }}
         style={{ background: "transparent" }}
       >

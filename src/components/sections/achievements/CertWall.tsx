@@ -1,14 +1,25 @@
 "use client";
 
 import { useRef } from "react";
-import { Award, BadgeCheck } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import { gsap, useGSAP } from "@/lib/gsap";
+import { Brackets, Readout } from "@/components/core/ai";
+import { DUR, EASE, STAGGER, reducedMotion } from "@/lib/motion";
 import { certifications } from "@/data/profile";
 import { seeded } from "@/lib/utils";
+import CertGlyph from "./CertGlyph";
+
+/** Everything here is counted from `certifications`, never asserted. */
+const CERT_STATS = [
+  { k: "certificates", v: String(certifications.length) },
+  { k: "issuers", v: String(new Set(certifications.map((c) => c.issuer)).size) },
+  { k: "elite", v: String(certifications.filter((c) => /elite/i.test(c.grade)).length) },
+];
 
 /**
  * Credential wall: the cards arrive scattered in 3D and snap into an aligned
- * grid, then breathe on independent loops.
+ * grid, then breathe on independent loops. Each one is framed as a model card —
+ * mono field labels, a corner metric glyph, brackets on hover.
  */
 export default function CertWall() {
   const root = useRef<HTMLDivElement>(null);
@@ -20,9 +31,8 @@ export default function CertWall() {
 
       const cards = gsap.utils.toArray<HTMLElement>("[data-cert]", el);
       const floats = gsap.utils.toArray<HTMLElement>("[data-cert-float]", el);
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-      if (reduced) {
+      if (reducedMotion()) {
         gsap.set(cards, { opacity: 1, clearProps: "transform" });
         return;
       }
@@ -42,37 +52,45 @@ export default function CertWall() {
         });
       });
 
-      gsap.to(cards, {
+      const loops: gsap.core.Tween[] = [];
+      const assemble = gsap.to(cards, {
         opacity: 1,
         x: 0,
         y: 0,
         z: 0,
         rotateX: 0,
         rotateY: 0,
-        duration: 1.15,
-        ease: "expo.out",
-        stagger: 0.085,
+        duration: DUR.slow,
+        ease: EASE.expo,
+        stagger: STAGGER.base,
         scrollTrigger: { trigger: el, start: "top 82%", once: true },
         onComplete: () => {
           floats.forEach((f, i) => {
             const a = seeded(i + 5);
-            gsap.to(f, {
-              y: -6 - a * 7,
-              duration: 3.2 + a * 2.1,
-              delay: a * 1.8,
-              ease: "sine.inOut",
-              yoyo: true,
-              repeat: -1,
-            });
+            loops.push(
+              gsap.to(f, {
+                y: -6 - a * 7,
+                duration: DUR.amble + a * 2.1,
+                delay: a * 1.8,
+                ease: "sine.inOut",
+                yoyo: true,
+                repeat: -1,
+              }),
+            );
           });
         },
       });
+
+      return () => {
+        assemble.kill();
+        loops.forEach((l) => l.kill());
+      };
     },
     { scope: root },
   );
 
   const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (reducedMotion()) return;
     const host = e.currentTarget;
     const tilt = host.querySelector<HTMLElement>("[data-cert-tilt]");
     if (!tilt) return;
@@ -84,8 +102,8 @@ export default function CertWall() {
       rotateX: -py * 13,
       y: -8,
       scale: 1.03,
-      duration: 0.5,
-      ease: "power3.out",
+      duration: DUR.fast,
+      ease: EASE.out,
       transformPerspective: 800,
     });
   };
@@ -98,8 +116,8 @@ export default function CertWall() {
       rotateY: 0,
       y: 0,
       scale: 1,
-      duration: 0.7,
-      ease: "power3.out",
+      duration: DUR.base,
+      ease: EASE.out,
     });
   };
 
@@ -109,13 +127,14 @@ export default function CertWall() {
         <BadgeCheck aria-hidden className="size-4 text-blue" strokeWidth={2.2} />
         Certifications
       </h3>
+      <Readout className="mt-3" items={CERT_STATS} />
 
       <div
         ref={root}
         className="mt-6 grid grid-cols-2 gap-3.5 sm:gap-4 lg:grid-cols-5"
         style={{ perspective: "1200px", transformStyle: "preserve-3d" }}
       >
-        {certifications.map((cert) => (
+        {certifications.map((cert, i) => (
           <div key={cert.title} data-cert className="js-hidden h-full">
             <div data-cert-float className="h-full">
               <div
@@ -125,28 +144,44 @@ export default function CertWall() {
                 onMouseLeave={onLeave}
                 className="card-soft group relative flex h-full flex-col overflow-hidden px-4 py-5 transition-shadow duration-300 hover:shadow-glow sm:px-5"
               >
+                {/* decorative layers — all beneath the content block below */}
                 <span
                   aria-hidden
                   className="absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-blue via-electric to-blue/0"
                 />
-                <Award
-                  aria-hidden
-                  className="pointer-events-none absolute -bottom-4 -right-4 size-20 text-blue/[0.06] transition-colors duration-300 group-hover:text-blue/[0.12]"
-                  strokeWidth={1.4}
+                <CertGlyph
+                  grade={cert.grade}
+                  index={i}
+                  className="-bottom-5 -right-5 size-24 opacity-[0.13] transition-opacity duration-300 group-hover:opacity-[0.26]"
                 />
+                <Brackets className="inset-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-                <p className="font-mono text-[0.62rem] font-medium uppercase leading-relaxed tracking-[0.1em] text-blue">
-                  {cert.issuer}
-                </p>
-                <p className="mt-2.5 text-[0.9rem] font-bold leading-snug tracking-tight text-ink">
-                  {cert.title}
-                </p>
-                <p className="mt-1.5 text-[0.78rem] leading-snug text-muted">{cert.grade}</p>
+                <div className="relative z-10 flex flex-1 flex-col">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-mono text-[0.62rem] font-medium uppercase leading-relaxed tracking-[0.1em] text-blue">
+                      {cert.issuer}
+                    </p>
+                    <span
+                      aria-hidden
+                      className="mt-px font-mono text-[0.6rem] tracking-[0.1em] text-muted/45"
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                  </div>
 
-                <div aria-hidden className="h-5" />
-                <p className="relative z-10 mt-auto border-t border-line pt-3.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-muted/80">
-                  {cert.date}
-                </p>
+                  <p className="mt-2.5 text-[0.9rem] font-bold leading-snug tracking-tight text-ink">
+                    {cert.title}
+                  </p>
+
+                  <p className="mt-2 font-mono text-[0.68rem] leading-snug">
+                    <span className="text-muted/60">grade </span>
+                    <span className="font-semibold text-ink/80">{cert.grade}</span>
+                  </p>
+
+                  <p className="mt-auto border-t border-line pt-3.5 font-mono text-[0.62rem] uppercase tracking-[0.1em] text-muted/80">
+                    {cert.date}
+                  </p>
+                </div>
               </div>
             </div>
           </div>

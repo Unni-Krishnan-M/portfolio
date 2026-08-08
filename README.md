@@ -77,6 +77,54 @@ update the `width`/`height` and the `aspect-[920/1021]` box in
 
 ---
 
+## AI & Data Science design language
+
+`src/components/core/ai/` is a small domain vocabulary reused across sections, so the
+site reads as an AI/DS engineer's portfolio rather than a generic premium template.
+Everything in it is light-theme, blue-only, deterministic in layout (so SSR and client
+markup match) and reduced-motion aware.
+
+| Component | Draws |
+| --- | --- |
+| `NeuralField` | node/edge mesh with signals riding weighted edges |
+| `LossCurve` | decaying training-loss curve that draws itself |
+| `EmbeddingScatter` | 2-D projection with labelled clusters settling into place |
+| `ConfusionMatrix` | NxN heatmap, strong diagonal, cells filling in |
+| `TensorGrid` | isometric cube volume with a slice sweeping through |
+| `NotebookCell` | `In [n]:` frame around real content |
+| `Readout` | mono telemetry strip |
+| `Brackets` | technical corner framing |
+
+`NotebookCell` and `Readout` frame real content so they are not `aria-hidden`;
+everything else is decoration and is, and sits strictly *behind* content.
+
+Where sections show telemetry, the values are **parsed from `src/data/profile.ts`**, not
+authored — durations come from the `meta` string or the start/end months, counts are
+regex-extracted from the actual bullet text. Nothing in a readout is asserted by hand.
+
+## Motion tokens
+
+`src/lib/motion.ts` holds `EASE`, `DUR`, `STAGGER`, `reveal()` and `reducedMotion()`.
+Sections import from here instead of hand-rolling values. The shared entrance
+primitives (`Reveal`, `SplitReveal`) read the tokens too, so a timing change is one edit.
+
+## The portrait is real geometry
+
+`PortraitScene` displaces a 320x340-segment plane with maps derived from the photograph:
+
+- **depth** — a distance transform of the alpha matte supplies the volume (the medial
+  axis of the silhouette becomes the closest point to camera), plus a luminance high-pass
+  for surface relief and a lift so the dark hair doesn't cave inward
+- **normal** — Sobel gradient of that depth. Without it `displacementMap` moves vertices
+  but leaves the shading flat, so the relief wouldn't read at all
+- **alpha / colour** — split out of the cut-out
+
+Data nodes orbit at `z = -2.9` with a capped radius so the furthest-forward node still
+sits behind the portrait plane. Orbiting *around* the bust put spheres on his cheek and
+ear, which read as blemishes rather than depth.
+
+Regenerate the maps with the script in the commit history if the photo is ever replaced.
+
 ## Design system
 
 Tokens are declared in `globals.css` under `@theme`, so they're available as ordinary Tailwind classes.

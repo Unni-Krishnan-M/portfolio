@@ -3,6 +3,8 @@
 import { useRef } from "react";
 import { Zap } from "lucide-react";
 import { gsap, ScrollTrigger, useGSAP } from "@/lib/gsap";
+import { TensorGrid } from "@/components/core/ai";
+import { DUR, EASE, STAGGER, reducedMotion } from "@/lib/motion";
 import { hackathons, type Hackathon } from "@/data/profile";
 import { cn } from "@/lib/utils";
 
@@ -49,18 +51,26 @@ export default function HackathonTimeline() {
       const el = root.current;
       if (!el) return;
 
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const tracks = gsap.utils.toArray<HTMLElement>("[data-hk-track]", el);
       const cards = gsap.utils.toArray<HTMLElement>("[data-hk-card]", el);
       const nodes = gsap.utils.toArray<HTMLElement>("[data-hk-node]", el);
 
-      if (reduced) {
+      if (reducedMotion()) {
         gsap.set(tracks, { scaleX: 1, scaleY: 1 });
         gsap.set(cards, { opacity: 1, y: 0 });
-        gsap.set(nodes.map((n) => n.querySelector("[data-hk-dot]")), { scale: 1 });
-        gsap.set(nodes.map((n) => n.querySelector("[data-hk-ring]")), { opacity: 0 });
+        gsap.set(
+          nodes.map((n) => n.querySelector("[data-hk-dot]")),
+          { scale: 1 },
+        );
+        gsap.set(
+          nodes.map((n) => n.querySelector("[data-hk-ring]")),
+          { opacity: 0 },
+        );
         return;
       }
+
+      const tweens: gsap.core.Tween[] = [];
+      const triggers: ScrollTrigger[] = [];
 
       tracks.forEach((track) => {
         const vertical = track.dataset.hkTrack === "vertical";
@@ -69,17 +79,19 @@ export default function HackathonTimeline() {
           scaleY: vertical ? 0 : 1,
           transformOrigin: vertical ? "top center" : "left center",
         });
-        gsap.to(track, {
-          scaleX: 1,
-          scaleY: 1,
-          ease: "none",
-          scrollTrigger: {
-            trigger: track.parentElement ?? track,
-            start: "top 80%",
-            end: "bottom 62%",
-            scrub: 0.6,
-          },
-        });
+        tweens.push(
+          gsap.to(track, {
+            scaleX: 1,
+            scaleY: 1,
+            ease: EASE.none,
+            scrollTrigger: {
+              trigger: track.parentElement ?? track,
+              start: "top 80%",
+              end: "bottom 62%",
+              scrub: 0.6,
+            },
+          }),
+        );
       });
 
       nodes.forEach((node) => {
@@ -90,93 +102,111 @@ export default function HackathonTimeline() {
 
         const tl = gsap
           .timeline({ paused: true })
-          .to(dot, { scale: 1, duration: 0.5, ease: "back.out(2.6)" })
+          .to(dot, { scale: 1, duration: DUR.fast, ease: "back.out(2.6)" })
           .fromTo(
             ring,
             { opacity: 0.75, scale: 0.75 },
-            { opacity: 0, scale: 2.6, duration: 1.2, ease: "power2.out" },
+            { opacity: 0, scale: 2.6, duration: DUR.slow, ease: EASE.out },
             0,
           );
 
-        ScrollTrigger.create({
-          trigger: node,
-          start: "top 76%",
-          once: true,
-          onEnter: () => tl.play(),
-        });
+        triggers.push(
+          ScrollTrigger.create({
+            trigger: node,
+            start: "top 76%",
+            once: true,
+            onEnter: () => tl.play(),
+          }),
+        );
       });
 
       cards.forEach((card, i) => {
-        gsap.fromTo(
-          card,
-          { opacity: 0, y: 26 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.85,
-            delay: 0.18 + (i % 3) * 0.05,
-            ease: "expo.out",
-            scrollTrigger: { trigger: card, start: "top 88%", once: true },
-          },
+        tweens.push(
+          gsap.fromTo(
+            card,
+            { opacity: 0, y: 26 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: DUR.base,
+              delay: 0.18 + (i % 3) * STAGGER.tight,
+              ease: EASE.expo,
+              scrollTrigger: { trigger: card, start: "top 88%", once: true },
+            },
+          ),
         );
       });
+
+      return () => {
+        tweens.forEach((t) => t.kill());
+        triggers.forEach((t) => t.kill());
+      };
     },
     { scope: root },
   );
 
   return (
-    <div ref={root} className="min-w-0">
-      <h3 className="flex items-center gap-2.5 text-[1.05rem] font-bold tracking-tight text-ink">
-        <Zap aria-hidden className="size-4 text-blue" strokeWidth={2.2} />
-        Hackathons
-      </h3>
+    <div ref={root} className="relative min-w-0">
+      {/* decorative volume behind the event line */}
+      <TensorGrid
+        cols={8}
+        rows={3}
+        className="pointer-events-none absolute right-0 top-10 h-40 w-[min(100%,18rem)] opacity-[0.14] sm:h-52 sm:w-[min(100%,26rem)]"
+      />
 
-      {/* horizontal — lg+ */}
-      <div className="relative mt-8 hidden lg:block">
-        <span
-          aria-hidden
-          className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-line"
-        />
-        <span
-          aria-hidden
-          data-hk-track="horizontal"
-          className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-blue via-blue to-electric"
-        />
-        <ol className="relative grid grid-cols-3 gap-4">
-          {hackathons.map((item, i) => (
-            <li key={item.name} className="relative flex h-[300px] min-w-0 flex-col">
-              <div className="flex flex-1 items-end justify-center pb-7">
-                {i % 2 === 0 ? <EventCard item={item} /> : null}
-              </div>
-              <div className="flex flex-1 items-start justify-center pt-7">
-                {i % 2 === 1 ? <EventCard item={item} /> : null}
-              </div>
-              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                <EventNode />
-              </span>
-            </li>
-          ))}
-        </ol>
-      </div>
+      <div className="relative z-10">
+        <h3 className="flex items-center gap-2.5 text-[1.05rem] font-bold tracking-tight text-ink">
+          <Zap aria-hidden className="size-4 text-blue" strokeWidth={2.2} />
+          Hackathons
+        </h3>
 
-      {/* vertical — mobile / tablet */}
-      <div className="relative mt-7 pl-8 lg:hidden">
-        <span aria-hidden className="absolute bottom-3 left-[7px] top-3 w-px bg-line" />
-        <span
-          aria-hidden
-          data-hk-track="vertical"
-          className="absolute bottom-3 left-[7px] top-3 w-px bg-gradient-to-b from-blue to-electric"
-        />
-        <ol className="flex flex-col gap-4">
-          {hackathons.map((item) => (
-            <li key={item.name} className="relative">
-              <span className="absolute -left-8 top-5">
-                <EventNode />
-              </span>
-              <EventCard item={item} />
-            </li>
-          ))}
-        </ol>
+        {/* horizontal — lg+ */}
+        <div className="relative mt-8 hidden lg:block">
+          <span
+            aria-hidden
+            className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-line"
+          />
+          <span
+            aria-hidden
+            data-hk-track="horizontal"
+            className="absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-blue via-blue to-electric"
+          />
+          <ol className="relative grid grid-cols-3 gap-4">
+            {hackathons.map((item, i) => (
+              <li key={item.name} className="relative flex h-[300px] min-w-0 flex-col">
+                <div className="flex flex-1 items-end justify-center pb-7">
+                  {i % 2 === 0 ? <EventCard item={item} /> : null}
+                </div>
+                <div className="flex flex-1 items-start justify-center pt-7">
+                  {i % 2 === 1 ? <EventCard item={item} /> : null}
+                </div>
+                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                  <EventNode />
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* vertical — mobile / tablet */}
+        <div className="relative mt-7 pl-8 lg:hidden">
+          <span aria-hidden className="absolute bottom-3 left-[7px] top-3 w-px bg-line" />
+          <span
+            aria-hidden
+            data-hk-track="vertical"
+            className="absolute bottom-3 left-[7px] top-3 w-px bg-gradient-to-b from-blue to-electric"
+          />
+          <ol className="flex flex-col gap-4">
+            {hackathons.map((item) => (
+              <li key={item.name} className="relative">
+                <span className="absolute -left-8 top-5">
+                  <EventNode />
+                </span>
+                <EventCard item={item} />
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
     </div>
   );

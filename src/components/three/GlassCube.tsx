@@ -31,10 +31,13 @@ function useWordmark() {
       const family =
         getComputedStyle(document.body).fontFamily || "system-ui, sans-serif";
       ctx.clearRect(0, 0, 512, 512);
-      ctx.font = `800 268px ${family}`;
+      ctx.font = `800 286px ${family}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = BLUE;
+      // Drawn twice: the mark reads through a 0.5-opacity shell, and a single
+      // pass came out washed against the white page.
+      ctx.fillText("UK", 256, 276);
       ctx.fillText("UK", 256, 276);
       // Flagging a THREE.Texture dirty is how the three.js API works; the
       // compiler can't tell this apart from mutating a memoized React value.
@@ -149,7 +152,7 @@ export default function GlassCube() {
 
         {/* Hairline edges keep the silhouette readable against a white page. */}
         <lineSegments geometry={edges}>
-          <lineBasicMaterial color={BLUE} transparent opacity={0.85} toneMapped={false} />
+          <lineBasicMaterial color={BLUE} transparent opacity={0.55} toneMapped={false} />
         </lineSegments>
       </group>
     </group>

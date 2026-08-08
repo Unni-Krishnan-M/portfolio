@@ -126,12 +126,16 @@ export default function Toolkit() {
              The CSS/SVG version is the base layer and stays interactive; the 3D
              scene fades in over it once WebGL has proven it renders, and the
              hovered technology drives both. */}
-        <div className="relative">
+        {/* The wrapper carries the sizing, so both layers occupy the *same* box.
+            Previously the canvas was inset-0 of the full-width column while the
+            CSS constellation sat in a centred square inside it — which is why the
+            3D core rendered off-centre. */}
+        <div className="relative mx-auto aspect-square w-full max-w-[20rem] sm:max-w-[26rem] lg:max-w-[30rem] xl:max-w-[33rem]">
           {/* Faded to 0 but still hit-testable — an opacity-0 element keeps
               receiving pointer events, so hover and keyboard focus stay on these
               nodes while the WebGL layer above (pointer-events-none) draws. */}
           <div
-            className="transition-opacity duration-700"
+            className="absolute inset-0 transition-opacity duration-700"
             style={{ opacity: scene3d ? 0 : 1 }}
           >
             <Constellation hovered={hovered} onHover={setHovered} onSelect={onSelect} />

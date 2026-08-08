@@ -72,7 +72,7 @@ function Plinth() {
 /* ------------------------------------------------------------------ */
 
 const ORBITERS = Array.from({ length: 8 }, (_, i) => ({
-  radius: 2.45 + seeded(i * 3.7) * 1.15,
+  radius: 2.25 + seeded(i * 3.7) * 0.95,
   speed: 0.14 + seeded(i * 5.1) * 0.2,
   phase: seeded(i * 9.3) * Math.PI * 2,
   tilt: 0.35 + seeded(i * 2.2) * 0.85,
@@ -229,7 +229,10 @@ export default function HeroScene({ onFirstFrame }: { onFirstFrame?: () => void 
       <Canvas
         dpr={[1, 1.5]}
         frameloop="always"
-        camera={{ position: [0, 0, 6], fov: 42 }}
+        // Pulled back from z=6: at fov 42 the visible height at the origin was
+        // 4.6 units while the orbit ring spanned ~7, so orbiters clipped at the
+        // frame edge instead of reading as depth.
+        camera={{ position: [0, 0.15, 7.6], fov: 40 }}
         gl={{ alpha: true, antialias: true }}
         style={{ background: "transparent" }}
       >

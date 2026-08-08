@@ -2,6 +2,7 @@
 
 import { useRef, type ElementType, type ReactNode } from "react";
 import { gsap, useGSAP } from "@/lib/gsap";
+import { DUR, EASE } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 type RevealProps = {
@@ -28,7 +29,7 @@ export default function Reveal({
   className,
   from = "bottom",
   delay = 0,
-  duration = 1,
+  duration = DUR.base,
   distance = 34,
   stagger,
   as: TagProp = "div",
@@ -60,7 +61,7 @@ export default function Reveal({
         duration,
         delay,
         stagger: stagger ?? 0,
-        ease: "power3.out",
+        ease: EASE.out,
         scrollTrigger: { trigger: root, start, once, toggleActions: "play none none none" },
       });
     },
