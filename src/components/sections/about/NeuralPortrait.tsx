@@ -1,11 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import dynamic from "next/dynamic";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { gsap, useGSAP } from "@/lib/gsap";
 import { seeded, clamp, lerp } from "@/lib/utils";
-import { useIsDesktop, useReducedMotion } from "@/lib/hooks";
+import { useReducedMotion } from "@/lib/hooks";
 
 /* ------------------------------------------------------------------ */
 /* Deterministic geometry, generated once at module scope so the SSR    */
@@ -17,9 +16,6 @@ const CX = 300;
 const CY = 300;
 
 const q = (n: number) => Math.round(n * 1e4) / 1e4;
-
-// The 3D bust is code-split and desktop-only; the flat cut-out stays as the base.
-const PortraitScene = dynamic(() => import("@/components/three/PortraitScene"), { ssr: false });
 
 const NODES = Array.from({ length: 14 }, (_, i) => {
   const a = seeded(i * 2.7 + 1) * Math.PI * 2;
@@ -55,7 +51,6 @@ const ORBITS = [
   { rx: 288, ry: 150, rot: 12, dur: 118 },
 ];
 
-/* Cursive "Unni" — a decorative flourish, not a real signature scan. */
 /* Cursive "Unni" — four strokes plus an underline, drawn in sequence. A
    decorative flourish, not a scan of a real signature. */
 const SIG_U = "M12 16C9 50 18 79 39 76C57 73 61 47 61 16";
@@ -69,9 +64,6 @@ export default function NeuralPortrait() {
   const root = useRef<HTMLDivElement>(null);
   const tilt = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
-  const isDesktop = useIsDesktop();
-  const [bust3d, setBust3d] = useState(false);
-  const use3D = isDesktop && !reduced;
 
   useGSAP(
     () => {
@@ -221,13 +213,11 @@ export default function NeuralPortrait() {
           </g>
         </svg>
 
-        {/* The figure. The flat cut-out is the base layer — alpha-feathered on
-            every edge, so it sits directly on the page background with no frame.
-            The displaced 3D bust fades in over it once WebGL reports a frame. */}
+        {/* The figure. Alpha-feathered on every edge, so it sits directly on the
+            page background — no frame, no solid backing block. */}
         <div
           ref={tilt}
-          className="absolute inset-0 flex items-end justify-center transition-opacity duration-700 will-change-transform"
-          style={{ opacity: bust3d ? 0 : 1 }}
+          className="absolute inset-0 flex items-end justify-center will-change-transform"
         >
           <Image
             src="/img/unni-portrait.webp"
@@ -239,16 +229,6 @@ export default function NeuralPortrait() {
             className="h-full w-auto object-contain"
           />
         </div>
-
-        {use3D ? (
-          <div
-            aria-hidden
-            className="absolute inset-0 transition-opacity duration-700"
-            style={{ opacity: bust3d ? 1 : 0 }}
-          >
-            <PortraitScene onFirstFrame={() => setBust3d(true)} />
-          </div>
-        ) : null}
 
         {/* long orbital sweeps — in front, so they wrap the figure */}
         <svg

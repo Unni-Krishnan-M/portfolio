@@ -67,10 +67,13 @@ src/
 
 Almost everything is data-driven. To change a fact, edit `src/data/profile.ts`; to change the work shown, edit `src/data/projects.ts`. No component holds hardcoded copy about Unni.
 
-**Replace the portrait:** the current file is Unni's own photograph with the background
-removed locally — a per-material colour model (face, hair, neck, shirt) scored against a
-background model sampled from the frame edges, combined with a focus/bokeh score, then
-soft-matted through a trimap so hair keeps its strands. To swap it, drop a new cut-out at
+**The portrait** is Unni's own photograph, background-removed locally: a per-material
+colour model (face, hair, neck, shirt) scored against a background model sampled from the
+frame edges, combined with a focus/bokeh score, then soft-matted through a trimap so hair
+keeps its strands. It is rendered as a flat `next/image` cut-out — a displaced 3D version
+was built and then removed by request.
+
+**To replace it:** To swap it, drop a new cut-out at
 `public/img/unni-portrait.webp` (transparent background, figure fading toward the bottom) and
 update the `width`/`height` and the `aspect-[920/1021]` box in
 `src/components/sections/about/NeuralPortrait.tsx` if the dimensions differ.
@@ -107,23 +110,6 @@ regex-extracted from the actual bullet text. Nothing in a readout is asserted by
 `src/lib/motion.ts` holds `EASE`, `DUR`, `STAGGER`, `reveal()` and `reducedMotion()`.
 Sections import from here instead of hand-rolling values. The shared entrance
 primitives (`Reveal`, `SplitReveal`) read the tokens too, so a timing change is one edit.
-
-## The portrait is real geometry
-
-`PortraitScene` displaces a 320x340-segment plane with maps derived from the photograph:
-
-- **depth** — a distance transform of the alpha matte supplies the volume (the medial
-  axis of the silhouette becomes the closest point to camera), plus a luminance high-pass
-  for surface relief and a lift so the dark hair doesn't cave inward
-- **normal** — Sobel gradient of that depth. Without it `displacementMap` moves vertices
-  but leaves the shading flat, so the relief wouldn't read at all
-- **alpha / colour** — split out of the cut-out
-
-Data nodes orbit at `z = -2.9` with a capped radius so the furthest-forward node still
-sits behind the portrait plane. Orbiting *around* the bust put spheres on his cheek and
-ear, which read as blemishes rather than depth.
-
-Regenerate the maps with the script in the commit history if the photo is ever replaced.
 
 ## Design system
 
