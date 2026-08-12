@@ -40,15 +40,19 @@ npm start       # serve the production build
 ```
 src/
 ├── app/
-│   ├── layout.tsx            fonts, SEO metadata, JSON-LD, global chrome
-│   ├── page.tsx              section composition order
+│   ├── layout.tsx            document shell — fonts and SEO metadata only
+│   ├── (site)/layout.tsx     the portfolio's chrome + JSON-LD
+│   ├── (site)/page.tsx       section composition order
+│   ├── admin/[key]/          the content studio (secret path + password)
 │   ├── globals.css           design tokens, custom utilities, keyframes
 │   ├── icon.tsx              generated favicon
 │   └── opengraph-image.tsx   generated social card
 ├── data/
-│   ├── profile.ts            every fact about Unni — single source of truth
+│   ├── content.json          every fact about Unni — single source of truth
+│   ├── profile.ts            types + typed reads of content.json
 │   └── projects.ts           the real GitHub repositories
 ├── lib/
+│   ├── admin/                studio auth, GitHub commits, content schema
 │   ├── gsap.ts               registers GSAP plugins exactly once
 │   ├── hooks.ts              useMediaQuery / useReducedMotion / useIsDesktop
 │   └── utils.ts              cn, clamp, lerp, seeded
@@ -60,23 +64,87 @@ src/
 │   ├── three/                the hero WebGL scene (code-split, desktop only)
 │   └── sections/             Hero, About, Statement, Toolkit, Projects,
 │                             Experience, Achievements, Contact, Footer
-└── public/img/               portrait asset
+├── scripts/
+│   └── portrait-matte.py     cuts the portrait out of its studio backdrop
+└── public/img/               portrait: raw photograph + derived cut-out
 ```
 
 ### Editing content
 
-Almost everything is data-driven. To change a fact, edit `src/data/profile.ts`; to change the work shown, edit `src/data/projects.ts`. No component holds hardcoded copy about Unni.
+Every fact lives in `src/data/content.json`. No component holds hardcoded copy about Unni.
+`src/data/profile.ts` and `src/data/projects.ts` still exist and still export the same names —
+they now own the *types* and read their values from that JSON, so nothing that imports them
+changed. Edit the JSON directly, or use the studio below.
 
-**The portrait** is Unni's own photograph, background-removed locally: a per-material
-colour model (face, hair, neck, shirt) scored against a background model sampled from the
-frame edges, combined with a focus/bokeh score, then soft-matted through a trimap so hair
-keeps its strands. It is rendered as a flat `next/image` cut-out — a displaced 3D version
-was built and then removed by request.
+### The content studio
 
-**To replace it:** To swap it, drop a new cut-out at
-`public/img/unni-portrait.webp` (transparent background, figure fading toward the bottom) and
-update the `width`/`height` and the `aspect-[920/1021]` box in
-`src/components/sections/about/NeuralPortrait.tsx` if the dimensions differ.
+`/admin/<ADMIN_KEY>` is a form editor for all eighteen content groups — add, remove, reorder
+and rewrite anything, from a project's metrics to the marquee band. Pressing **Publish**
+commits `content.json` to this repository, which makes Vercel rebuild; the live site updates
+about a minute later.
+
+**Setup.** Copy `.env.example` to `.env.local` for local use, and add the same variables in
+Vercel under *Settings → Environment Variables*. You need:
+
+| Variable | Why |
+| --- | --- |
+| `ADMIN_KEY` | Secret path segment, 16+ chars. `openssl rand -hex 16` |
+| `ADMIN_PASSWORD` | Studio password, 12+ chars |
+| `GITHUB_TOKEN` | Fine-grained PAT, **this repo only**, *Contents: read and write* |
+| `GITHUB_REPO` | `owner/repository` |
+
+Until `ADMIN_KEY` and `ADMIN_PASSWORD` are both set and long enough the route 404s — the
+studio does not run half-configured. Without the GitHub variables it still edits and offers
+**Download JSON**, but Publish is disabled.
+
+**Why a password as well as a secret URL.** A secret path alone was the original idea, but URLs
+leak — shared-machine history, a screenshot, a referrer header — and this endpoint can rewrite
+the entire site. Both gates are checked inside every Server Action, not just when rendering the
+page, because an action is a public POST endpoint that can be invoked without ever loading the
+UI. Submitted documents are validated against `src/lib/admin/schema.ts` before anything is
+written, so a malformed payload cannot break the build.
+
+**Why git rather than a database.** The site stays fully static, so a GitHub outage stops
+*editing* but never affects visitors — the failure mode a database would invert. Content also
+gets version history and a revert path for free, and it needs no dependency beyond `fetch`.
+The trade-off is that publishing takes about a minute instead of being instant.
+
+Two things worth knowing: saves are last-write-wins (the studio is single-user, and git history
+holds anything overwritten), and there is no live preview — use **View site** after a publish.
+`src/lib/admin/schema.ts` is the one place to add a field; it drives the form controls, the
+"Add" blanks and the validation together.
+
+**The portrait** is Unni's own photograph. The raw frame lives at
+`public/img/unni-portrait.jpg` — a studio shot over a synthetic backdrop of flat white,
+blue diagonal bands and halftone dots. `scripts/portrait-matte.py` cuts the figure out of
+it, writing the transparent `public/img/unni-portrait-cutout.webp` that the site actually
+loads. Two properties of that backdrop make it separable without a segmentation model: every
+backdrop region touches the frame edge (so background = matches the backdrop palette *and*
+connects to the border), and blue-minus-red separates the shirt from the bands where low red
+alone does not — the shirt's shadowed folds are as red-starved as the navy band, but never as
+blue. The matte is then pulled in ~2px to shed the white fringe, subject colour is bled
+outward so downscaling cannot halo, and the bottom is feathered where the torso leaves the
+frame.
+
+The same script then **grades the frame to the palette**. The raw photograph is lit warm —
+skin at R−B ≈ 99, shirt a muted `(37,72,131)` — which fights a `#f7faff` page whose only
+accent is `#1261ff`. The grade neutralises that tungsten cast and pulls the shirt and shadows
+into the blue family; his hair lands close to `--color-deep` on its own. It deliberately
+leaves his complexion alone: the moves are weighted by warmth / blueness / shadow depth
+rather than applied as a hue rotation, and mean skin luminance holds at ~116 against the
+original ~119, so the skin is tonally where it started — what changes is the light on it.
+The script prints both readings so the grade stays auditable, and `GRADE = 0` disables it.
+
+It renders as a flat `next/image` cut-out — a displaced 3D version was built and then
+removed by request.
+
+**To replace it:** drop a new photograph at `public/img/unni-portrait.jpg`, run
+`python3 scripts/portrait-matte.py` (needs `numpy`, `scipy`, `pillow`), and set the
+`width`/`height` and `aspect-[...]` box in
+`src/components/sections/about/NeuralPortrait.tsx` to the canvas size it prints. The
+palette thresholds at the top of the script are tuned to this backdrop; a different one
+needs them re-measured — the script refuses to write if the result looks implausible.
+For a photograph already cut out, skip the script and point the component straight at it.
 
 ---
 

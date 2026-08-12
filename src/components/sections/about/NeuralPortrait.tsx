@@ -166,7 +166,7 @@ export default function NeuralPortrait() {
 
   return (
     <div ref={root} className="relative mx-auto w-full max-w-[26rem] sm:max-w-[30rem] lg:max-w-[34rem]">
-      <div className="relative aspect-[920/1021]">
+      <div className="relative aspect-[1077/1187]">
         {/* soft blue glow sphere sitting behind the head */}
         <div
           aria-hidden
@@ -213,17 +213,19 @@ export default function NeuralPortrait() {
           </g>
         </svg>
 
-        {/* The figure. Alpha-feathered on every edge, so it sits directly on the
-            page background — no frame, no solid backing block. */}
+        {/* The figure. A true alpha cutout, feathered out at the bottom where the
+            torso leaves the frame, so it sits directly on the page background —
+            no frame, no solid backing block. Derived from unni-portrait.jpg;
+            see README for how the matte is generated. */}
         <div
           ref={tilt}
           className="absolute inset-0 flex items-end justify-center will-change-transform"
         >
           <Image
-            src="/img/unni-portrait.webp"
+            src="/img/unni-portrait-cutout.webp"
             alt="Unni Krishnan M"
-            width={920}
-            height={1021}
+            width={1077}
+            height={1187}
             priority={false}
             sizes="(min-width: 1024px) 34rem, 90vw"
             className="h-full w-auto object-contain"

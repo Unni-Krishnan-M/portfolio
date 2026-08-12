@@ -2,14 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-import SmoothScroll from "@/components/core/SmoothScroll";
-import CustomCursor from "@/components/core/CustomCursor";
-import Preloader from "@/components/core/Preloader";
-import Navigation from "@/components/core/Navigation";
-import ScrollRail from "@/components/core/ScrollRail";
-import Environment from "@/components/core/Environment";
-import WarpOverlay from "@/components/core/WarpOverlay";
-import { profile, education } from "@/data/profile";
+import { profile } from "@/data/profile";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -77,59 +70,14 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-const personSchema = {
-  "@context": "https://schema.org",
-  "@type": "Person",
-  name: profile.name,
-  jobTitle: "AI & Data Science Student · Python Developer",
-  email: `mailto:${profile.email}`,
-  url: SITE,
-  sameAs: [profile.github, profile.linkedin],
-  address: { "@type": "PostalAddress", addressLocality: "Tirunelveli", addressCountry: "IN" },
-  alumniOf: {
-    "@type": "CollegeOrUniversity",
-    name: education.college,
-    parentOrganization: { "@type": "CollegeOrUniversity", name: education.university },
-  },
-  knowsAbout: [
-    "Artificial Intelligence",
-    "Machine Learning",
-    "Python",
-    "FastAPI",
-    "Next.js",
-    "React",
-    "Java",
-    "Spring Boot",
-    "MongoDB",
-  ],
-};
-
+/**
+ * Document shell only — fonts, metadata and <body>. The portfolio's visual
+ * chrome lives in (site)/layout.tsx so that /admin/<key> can render without it.
+ */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${jakarta.variable} ${mono.variable}`}>
-      <body className="relative antialiased">
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }}
-        />
-
-        <a
-          href="#about"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[500] focus:rounded-full focus:bg-blue focus:px-5 focus:py-2.5 focus:text-sm focus:text-white"
-        >
-          Skip to content
-        </a>
-
-        <Preloader />
-        <SmoothScroll />
-        <CustomCursor />
-        <Environment />
-        <WarpOverlay />
-        <Navigation />
-        <ScrollRail />
-
-        <main className="relative z-10">{children}</main>
-      </body>
+      <body className="relative antialiased">{children}</body>
     </html>
   );
 }
