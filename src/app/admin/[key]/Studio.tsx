@@ -17,13 +17,21 @@ export default function Studio({
   canCommit: boolean;
 }) {
   const [doc, setDoc] = useState<Doc>(() => structuredClone(initial));
+  /**
+   * What is currently published. Tracked separately from the `initial` prop,
+   * which is fixed for the life of the page: without this, a successful publish
+   * still reads as "unsaved changes", Discard rolls back to the pre-publish
+   * state, and undoing an edit after publishing makes the document match
+   * `initial` again — which silently disables Publish and strands the change.
+   */
+  const [baseline, setBaseline] = useState<Doc>(() => structuredClone(initial));
   const [active, setActive] = useState(SECTIONS[0].key);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<SaveResult | null>(null);
 
   const dirty = useMemo(
-    () => JSON.stringify(doc) !== JSON.stringify(initial),
-    [doc, initial],
+    () => JSON.stringify(doc) !== JSON.stringify(baseline),
+    [doc, baseline],
   );
   const problems = useMemo(() => validateContent(doc), [doc]);
 
@@ -45,8 +53,13 @@ export default function Studio({
   async function onSave() {
     setSaving(true);
     setResult(null);
+    const submitted = structuredClone(doc);
     try {
-      setResult(await saveContent(keySegment, doc));
+      const res = await saveContent(keySegment, submitted);
+      // Only the submitted snapshot is published — anything typed while the
+      // request was in flight stays dirty rather than being marked as saved.
+      if (res.ok) setBaseline(submitted);
+      setResult(res);
     } catch (cause) {
       setResult({
         ok: false,
@@ -98,7 +111,7 @@ export default function Studio({
           </button>
           <button
             type="button"
-            onClick={() => setDoc(structuredClone(initial))}
+            onClick={() => setDoc(structuredClone(baseline))}
             disabled={!dirty || saving}
             className="rounded-lg border border-line px-3 py-1.5 text-[0.8rem] text-muted transition-colors hover:border-blue hover:text-blue disabled:cursor-not-allowed disabled:opacity-40"
           >
