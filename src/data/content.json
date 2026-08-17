@@ -396,8 +396,7 @@
     "pip install fastapi",
     "export default function Page()",
     "torch.no_grad()",
-    "0.9412 accuracy",
-    "# publish path verified"
+    "0.9412 accuracy"
   ],
   "statement": {
     "eyebrow": "WHAT I ACTUALLY DO",
