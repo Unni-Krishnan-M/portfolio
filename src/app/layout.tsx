@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 import { profile } from "@/data/profile";
+import { SITE } from "@/lib/site";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -17,8 +18,6 @@ const mono = JetBrains_Mono({
   variable: "--font-mono-jb",
   weight: ["400", "500", "600"],
 });
-
-const SITE = "https://unni-krishnan.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),

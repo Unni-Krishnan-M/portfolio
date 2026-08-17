@@ -6,8 +6,7 @@ import ScrollRail from "@/components/core/ScrollRail";
 import Environment from "@/components/core/Environment";
 import WarpOverlay from "@/components/core/WarpOverlay";
 import { profile, education } from "@/data/profile";
-
-const SITE = "https://unni-krishnan.vercel.app";
+import { SITE } from "@/lib/site";
 
 const personSchema = {
   "@context": "https://schema.org",
