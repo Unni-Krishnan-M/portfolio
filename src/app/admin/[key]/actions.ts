@@ -21,20 +21,46 @@ import { validateContent } from "@/lib/admin/schema";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Failed-attempt throttle, held in module scope.
+ *
+ * Fluid Compute reuses a function instance across requests, so this survives
+ * between attempts and is real friction rather than decoration — though an
+ * attacker whose request lands on a cold instance starts from zero, so treat it
+ * as a speed bump, not a lockout. It matters because the path segment is short
+ * enough to guess, which leaves the password carrying the whole load.
+ */
+const LOCK_AFTER = 5;
+const LOCK_MS = 5 * 60 * 1000;
+let failures = 0;
+let lockedUntil = 0;
+
 export async function login(
   key: string,
   password: string,
 ): Promise<{ ok: boolean; error?: string }> {
   if (!verifyAdminKey(key)) return { ok: false, error: "Not available." };
 
+  const now = Date.now();
+  if (now < lockedUntil) {
+    const seconds = Math.ceil((lockedUntil - now) / 1000);
+    return { ok: false, error: `Too many attempts. Try again in ${seconds}s.` };
+  }
+
   if (!verifyPassword(password)) {
-    // Costs an attacker a second per guess. Real rate limiting needs shared
-    // state, which a static site on serverless functions does not have; the
-    // password length minimum is what actually carries the weight here.
+    failures += 1;
+    if (failures >= LOCK_AFTER) {
+      lockedUntil = now + LOCK_MS;
+      failures = 0;
+      return { ok: false, error: "Too many attempts. Locked for 5 minutes." };
+    }
+    // A second per guess on top of the lockout.
     await sleep(1000);
     return { ok: false, error: "Wrong password." };
   }
 
+  failures = 0;
+  lockedUntil = 0;
   await startSession();
   return { ok: true };
 }

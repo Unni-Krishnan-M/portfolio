@@ -18,8 +18,16 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 const COOKIE = "bm_studio";
 const TTL_SECONDS = 8 * 60 * 60;
 
-/** Minimums below which the studio refuses to switch on at all. */
-export const MIN_KEY_LENGTH = 16;
+/**
+ * Minimums below which the studio refuses to switch on at all.
+ *
+ * The key minimum was deliberately lowered from 16 so a short, memorable path
+ * can be used. Understand what that trades away: a guessable segment means the
+ * URL is no longer a meaningful second factor, and scanners probe /admin/* as a
+ * matter of routine — so the password is effectively the only thing protecting
+ * the site. That is why `login` throttles failed attempts.
+ */
+export const MIN_KEY_LENGTH = 4;
 export const MIN_PASSWORD_LENGTH = 12;
 
 const env = (name: string) => (process.env[name] ?? "").trim();
